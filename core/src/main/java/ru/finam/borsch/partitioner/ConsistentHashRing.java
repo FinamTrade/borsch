@@ -53,7 +53,7 @@ public class ConsistentHashRing {
         if (size <= 2){
             return size;
         } else {
-            return (int) ((addressList.size()) * 0.67);
+            return addressList.size() / 2 + 1;
         }
     }
 
