@@ -13,7 +13,7 @@ import ru.finam.borsch.BorschSettings;
 import ru.finam.borsch.cluster.Cluster;
 import ru.finam.borsch.InetAddress;
 import ru.finam.borsch.cluster.MemberListener;
-import ru.finam.borsch.partitioner.ConsistentHashRing;
+import ru.finam.borsch.partitioner.ServerHolder;
 import ru.finam.borsch.partitioner.MemberListenerImpl;
 import ru.finam.borsch.rpc.client.BorschClientManager;
 
@@ -23,9 +23,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 
 /**
@@ -46,7 +43,7 @@ public class ConsulCluster extends Cluster {
     private final String serviceHolderId;
     private final String borschIdCheck;
     private final MemberListener memberListener;
-    private final ConsistentHashRing consistentHashRing;
+    private final ServerHolder serverHolder;
     private final int grpcPort;
 
 
@@ -86,8 +83,8 @@ public class ConsulCluster extends Cluster {
         this.borschIdCheck = "borsch_" + serviceHolderId;
         InetAddress ownAddress = discoverOwnAddress(consul);
         this.grpcPort = ownAddress.getPort();
-        this.consistentHashRing = new ConsistentHashRing(ownAddress, new ArrayList<>());
-        this.memberListener = new MemberListenerImpl(borschClientManager, consistentHashRing);
+        this.serverHolder = new ServerHolder(ownAddress, new ArrayList<>());
+        this.memberListener = new MemberListenerImpl(borschClientManager, serverHolder);
     }
 
     private InetAddress discoverOwnAddress(Consul consul) {
@@ -167,17 +164,17 @@ public class ConsulCluster extends Cluster {
 
     @Override
     public boolean isMyData(ByteString accountHash) {
-        return consistentHashRing.isMyData(accountHash);
+        return serverHolder.isMyData(accountHash);
     }
 
     @Override
     public int quorum() {
-        return consistentHashRing.currentQuorum();
+        return serverHolder.currentQuorum();
     }
 
     @Override
     public int numOfMembers() {
-        return consistentHashRing.numOfMembers();
+        return serverHolder.numOfMembers();
     }
 
     @Override

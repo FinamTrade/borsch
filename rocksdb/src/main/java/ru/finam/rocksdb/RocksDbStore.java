@@ -8,6 +8,8 @@ import finam.protobuf.borsch.KVRecord;
 import org.rocksdb.*;
 import org.slf4j.*;
 import org.slf4j.Logger;
+
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -67,6 +69,9 @@ public class RocksDbStore implements Store {
     @Override
     public boolean put(KV kv) {
         ColumnFamilyHandle columnFamilyHandle = getHandle(kv.getColumnFamily());
+        if (columnFamilyHandle == null) {
+            return false;
+        }
         KVRecord kvRecord = createRecord(kv);
         try {
             db.put(columnFamilyHandle, new WriteOptions(),
@@ -153,6 +158,7 @@ public class RocksDbStore implements Store {
     }
 
 
+    @Nullable
     private KVRecord getRecord(String familyName, byte[] key) {
         ColumnFamilyHandle columnFamilyHandle = getHandle(familyName);
         try {
@@ -160,7 +166,7 @@ public class RocksDbStore implements Store {
             if (val == null || val.length == 0) {
                 return null;
             }
-            return KVRecord.parseFrom(ByteString.copyFrom(val));
+            return KVRecord.parseFrom(val);
         } catch (Throwable e) {
             LOG.error(e.getMessage(), e);
             return null;
@@ -177,12 +183,13 @@ public class RocksDbStore implements Store {
                 handle = db.createColumnFamily(descriptor);
             } catch (Exception ex) {
                 LOG.error(ex.getMessage(), ex);
+                //todo
             }
             return handle;
         });
     }
 
-     private static DBOptions createDbOptions() {
+    private static DBOptions createDbOptions() {
         return new DBOptions()
                 .setCreateIfMissing(true)
                 .setLogFileTimeToRoll(60)

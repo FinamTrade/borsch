@@ -16,18 +16,18 @@ public class MemberListenerImpl implements MemberListener {
     private static final Logger LOG = LoggerFactory.getLogger(MemberListenerImpl.class);
 
     private final BorschClientManager borschClientManager;
-    private final ConsistentHashRing consistentHashRing;
+    private final ServerHolder serverHolder;
 
 
     public MemberListenerImpl(BorschClientManager borschClientManager,
-                              ConsistentHashRing consistentHashRing) {
+                              ServerHolder serverHolder) {
         this.borschClientManager = borschClientManager;
-        this.consistentHashRing = consistentHashRing;
+        this.serverHolder = serverHolder;
     }
 
     @Override
     public void onJoin(InetAddress grpcAddress) {
-        consistentHashRing.addNewServer(grpcAddress);
+        serverHolder.addNewServer(grpcAddress);
         borschClientManager.onAddingNewServer(grpcAddress);
         LOG.info("{}  joined cluster ", grpcAddress);
     }
@@ -35,7 +35,7 @@ public class MemberListenerImpl implements MemberListener {
     @Override
     public void inLeave(InetAddress grpcAddress) {
         borschClientManager.onShutdownServer(grpcAddress);
-        consistentHashRing.removeServer(grpcAddress);
+        serverHolder.removeServer(grpcAddress);
         LOG.info("{} left cluster ", grpcAddress);
     }
 }
