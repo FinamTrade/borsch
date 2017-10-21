@@ -186,7 +186,7 @@ public class RocksDbStore implements Store {
                 handle = db.createColumnFamily(descriptor);
             } catch (Exception ex) {
                 LOG.error(ex.getMessage(), ex);
-                //todo
+                throw new RuntimeException("Can't create family {}" + family);
             }
             return handle;
         });
