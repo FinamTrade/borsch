@@ -32,16 +32,19 @@ public class RocksDbStore implements Store {
     }
 
     public RocksDbStore(String location) {
-        List<ColumnFamilyDescriptor> familyList = new ArrayList<>();
-        familyList.add(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY));
         List<ColumnFamilyHandle> columns = new ArrayList<>();
         DBOptions dbOptions = createDbOptions();
+        List<ColumnFamilyDescriptor> familyList;
         try {
             List<byte[]> families = RocksDB.listColumnFamilies(new Options(), location);
-            families.forEach(familyName -> familyList.add(new ColumnFamilyDescriptor(familyName)));
+            familyList = families.stream()
+                    .map(familyName -> new ColumnFamilyDescriptor(familyName))
+                    .collect(Collectors.toList());
+            familyList.add(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY));
 
         } catch (RocksDBException e) {
             LOG.error(e.getMessage(), e);
+            throw new RuntimeException("Coudn't load db from " + location);
         }
 
 

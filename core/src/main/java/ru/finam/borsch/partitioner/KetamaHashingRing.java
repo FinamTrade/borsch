@@ -2,19 +2,21 @@ package ru.finam.borsch.partitioner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.finam.borsch.InetAddress;
+import ru.finam.borsch.HostPortAddress;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 
 
 public class KetamaHashingRing {
 
     private static final Logger LOG = LoggerFactory.getLogger(KetamaHashingRing.class);
-    private static TreeMap<Long, InetAddress> buckets;
+    private static TreeMap<Long, HostPortAddress> buckets;
 
-    public KetamaHashingRing(List<InetAddress> servers) {
+    public KetamaHashingRing(List<HostPortAddress> servers) {
         buckets = new TreeMap<>();
         MessageDigest md5;
         try {
@@ -43,12 +45,16 @@ public class KetamaHashingRing {
     }
 
 
-    public InetAddress getServer(String key) {
+    public HostPortAddress getServer(String key) {
         if (buckets.size() == 1) {
             return buckets.firstEntry().getValue();
         }
         Long hv = md5HashingAlg(key);
-        return buckets.ceilingEntry(hv).getValue();
+        Map.Entry<Long, HostPortAddress> addressEntry = buckets.ceilingEntry(hv);
+        if (addressEntry == null) {
+            addressEntry = buckets.firstEntry();
+        }
+        return addressEntry.getValue();
     }
 
     private static Long md5HashingAlg(String key) {

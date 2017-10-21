@@ -1,6 +1,6 @@
 package ru.finam.borsch.cluster;
 
-import ru.finam.borsch.InetAddress;
+import ru.finam.borsch.HostPortAddress;
 
 /**
  * Created by akhaymovich on 06.09.17.
@@ -8,7 +8,7 @@ import ru.finam.borsch.InetAddress;
 public interface MemberListener {
 
 
-    void onJoin(InetAddress grpcAddress);
+    void onJoin(HostPortAddress grpcAddress);
 
-    void inLeave(InetAddress grpcAddress);
+    void onLeave(HostPortAddress grpcAddress);
 }

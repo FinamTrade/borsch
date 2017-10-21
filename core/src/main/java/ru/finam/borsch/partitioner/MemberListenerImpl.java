@@ -2,7 +2,7 @@ package ru.finam.borsch.partitioner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.finam.borsch.InetAddress;
+import ru.finam.borsch.HostPortAddress;
 import ru.finam.borsch.cluster.MemberListener;
 import ru.finam.borsch.rpc.client.BorschClientManager;
 
@@ -26,14 +26,14 @@ public class MemberListenerImpl implements MemberListener {
     }
 
     @Override
-    public void onJoin(InetAddress grpcAddress) {
+    public void onJoin(HostPortAddress grpcAddress) {
         serverHolder.addNewServer(grpcAddress);
         borschClientManager.onAddingNewServer(grpcAddress);
         LOG.info("{}  joined cluster ", grpcAddress);
     }
 
     @Override
-    public void inLeave(InetAddress grpcAddress) {
+    public void onLeave(HostPortAddress grpcAddress) {
         borschClientManager.onShutdownServer(grpcAddress);
         serverHolder.removeServer(grpcAddress);
         LOG.info("{} left cluster ", grpcAddress);

@@ -3,7 +3,7 @@ package ru.finam.borsch.rpc.client;
 import finam.protobuf.borsch.PutRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.finam.borsch.InetAddress;
+import ru.finam.borsch.HostPortAddress;
 import ru.finam.rocksdb.Store;
 
 import java.util.ArrayList;
@@ -28,11 +28,11 @@ public class BorschClientManager {
         this.store = store;
     }
 
-    public void onClusterStart(Collection<InetAddress> inetAddressList) {
-        inetAddressList.forEach(this::onAddingNewServer);
+    public void onClusterStart(Collection<HostPortAddress> hostPortAddressList) {
+        hostPortAddressList.forEach(this::onAddingNewServer);
         activeClientList.forEach(
                 client -> {
-                    LOG.info("Asking for snapshot from client {} ", client.getInetAddress());
+                    LOG.info("Asking for snapshot from client {} ", client.getHostPortAddress());
                     client.askForSnapshot();
                 }
         );
@@ -47,7 +47,7 @@ public class BorschClientManager {
             activeClientList
                     .forEach(client -> {
                         client.put(putRequest, resultListener);
-                      //  LOG.info("CLient address {} ", client.getInetAddress());
+                      //  LOG.info("CLient address {} ", client.getHostPortAddress());
 
                     });
         } finally {
@@ -55,7 +55,7 @@ public class BorschClientManager {
         }
     }
 
-    public void onAddingNewServer(InetAddress newServerAddress) {
+    public void onAddingNewServer(HostPortAddress newServerAddress) {
         BorschServiceClient newCient = new BorschServiceClient(newServerAddress, store);
         ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
         writeLock.lock();
@@ -67,10 +67,10 @@ public class BorschClientManager {
         }
     }
 
-    public void onShutdownServer(InetAddress inetAddress) {
+    public void onShutdownServer(HostPortAddress hostPortAddress) {
         Optional<BorschServiceClient> clientOptional =
                 activeClientList.stream()
-                        .filter(client -> client.getInetAddress().equals(inetAddress))
+                        .filter(client -> client.getHostPortAddress().equals(hostPortAddress))
                         .findAny();
         ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
         writeLock.lock();

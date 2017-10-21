@@ -6,7 +6,7 @@ import com.orbitz.consul.AgentClient;
 import com.orbitz.consul.Consul;
 import com.orbitz.consul.model.agent.ImmutableRegistration;
 import ru.finam.borsch.BorschSettings;
-import ru.finam.borsch.InetAddress;
+import ru.finam.borsch.HostPortAddress;
 import ru.finam.borsch.launch.StartPoint;
 
 import java.util.List;
@@ -19,16 +19,17 @@ public abstract class AbstractBorschEater {
     private final AgentClient agentClient;
     private final List<String> borschTags;
     private final BorschSettings borschSettings;
-    private final InetAddress grpcBorschAddress;
+    private final HostPortAddress grpcBorschAddress;
     private static final String SERVICE_NAME = "dev-ftcore-borsch-eater";
     private final SimpleGrpcClient grpcClient;
     private final int shard;
 
+    private static final String consulHost = "localhost";
+    private static final int consulPort = 8500;
 
-    public AbstractBorschEater(InetAddress grpcBorschAddress,
-                               String consulHost,
-                               int consulPort,
-                               int shard) {
+
+    public AbstractBorschEater(HostPortAddress grpcBorschAddress,
+                                                           int shard) {
         Consul consul = Consul.builder()
                 .withHostAndPort(HostAndPort.fromParts(consulHost,
                         consulPort))
@@ -37,8 +38,8 @@ public abstract class AbstractBorschEater {
         this.borschTags = ImmutableList.of(
                 "borschHost=" + grpcBorschAddress.getHost(),
                 "borschPort=" + grpcBorschAddress.getPort());
-        this.borschSettings = new BorschSettings("consul-agent",
-                8500, getServiceId(),
+        this.borschSettings = new BorschSettings(consulHost,
+                consulPort, getServiceId(),
                 SERVICE_NAME,
                 "/var/lib/borsch/db/" + getServiceId());
         this.grpcBorschAddress = grpcBorschAddress;

@@ -5,24 +5,24 @@ package ru.finam.borsch;
  * For grpc host - port
  * Created by akhaymovich on 06.09.17.
  */
-public class InetAddress {
+public class HostPortAddress {
 
     private final String host;
     private final int port;
 
-    public InetAddress(String host, int port) {
+    public HostPortAddress(String host, int port) {
         this.port = port;
         this.host = host;
     }
 
     @Override
     public boolean equals(Object object) {
-        if (!(object instanceof InetAddress)) {
+        if (!(object instanceof HostPortAddress)) {
             return false;
         }
-        InetAddress inetAddress = (InetAddress) object;
-        return inetAddress.getHost().equals(host) &&
-                inetAddress.getPort() == port;
+        HostPortAddress hostPortAddress = (HostPortAddress) object;
+        return hostPortAddress.getHost().equals(host) &&
+                hostPortAddress.getPort() == port;
     }
 
     @Override

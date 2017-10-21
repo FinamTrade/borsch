@@ -16,6 +16,6 @@ public class StartPoint {
     }
 
     public void launch() {
-        borschDependencyProvider.run();
+        borschDependencyProvider.start();
     }
 }

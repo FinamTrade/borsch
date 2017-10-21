@@ -7,7 +7,7 @@ import io.grpc.okhttp.OkHttpChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.finam.borsch.InetAddress;
+import ru.finam.borsch.HostPortAddress;
 import ru.finam.rocksdb.Store;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -21,19 +21,19 @@ class BorschServiceClient {
     private static final Logger LOG = LoggerFactory.getLogger(BorschServiceClient.class);
 
     private final BorschServiceGrpc.BorschServiceStub serviceStub;
-    private final InetAddress inetAddress;
+    private final HostPortAddress hostPortAddress;
     private final Store store;
 
 
     BorschServiceClient(
-            InetAddress inetAddress,
+            HostPortAddress hostPortAddress,
             Store store) {
-        ManagedChannel managedChannel = OkHttpChannelBuilder.forAddress(inetAddress.getHost(), inetAddress.getPort())
+        ManagedChannel managedChannel = OkHttpChannelBuilder.forAddress(hostPortAddress.getHost(), hostPortAddress.getPort())
                 .usePlaintext(true)
                 .idleTimeout(1, TimeUnit.MINUTES)
                 .build();
         serviceStub = BorschServiceGrpc.newStub(managedChannel);
-        this.inetAddress = inetAddress;
+        this.hostPortAddress = hostPortAddress;
         this.store = store;
     }
 
@@ -67,7 +67,7 @@ class BorschServiceClient {
         serviceStub.getSnapshotDb(request, new StreamObserver<GetSnapshotResponse>() {
             @Override
             public void onNext(GetSnapshotResponse value) {
-                LOG.info("Part of snapshot from {} ", inetAddress);
+                LOG.info("Part of snapshot from {} ", hostPortAddress);
                 store.loadSnapshot(value.getEntityList());
             }
 
@@ -78,12 +78,12 @@ class BorschServiceClient {
 
             @Override
             public void onCompleted() {
-                LOG.info("Load snapshot from {} ", inetAddress);
+                LOG.info("Load snapshot from {} ", hostPortAddress);
             }
         });
     }
 
-    InetAddress getInetAddress() {
-        return inetAddress;
+    HostPortAddress getHostPortAddress() {
+        return hostPortAddress;
     }
 }

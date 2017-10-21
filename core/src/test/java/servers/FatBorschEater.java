@@ -1,6 +1,6 @@
 package servers;
 
-import ru.finam.borsch.InetAddress;
+import ru.finam.borsch.HostPortAddress;
 
 /**
  * Created by akhaymovich on 08.10.17.
@@ -8,11 +8,9 @@ import ru.finam.borsch.InetAddress;
 public class FatBorschEater extends AbstractBorschEater {
 
 
-    public FatBorschEater(InetAddress grpcBorschAddress,
-                          String consulHost,
-                          int consulPort,
-                          int shard) {
-        super(grpcBorschAddress, consulHost, consulPort, shard);
+    public FatBorschEater(HostPortAddress grpcBorschAddress,
+                         int shard) {
+        super(grpcBorschAddress,  shard);
     }
 
     @Override

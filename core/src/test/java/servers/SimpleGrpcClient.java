@@ -4,7 +4,7 @@ import finam.protobuf.borsch.*;
 import io.grpc.ManagedChannel;
 import io.grpc.okhttp.OkHttpChannelBuilder;
 import io.grpc.stub.StreamObserver;
-import ru.finam.borsch.InetAddress;
+import ru.finam.borsch.HostPortAddress;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -15,8 +15,8 @@ public class SimpleGrpcClient {
     private ManagedChannel managedChannel;
     private BorschServiceGrpc.BorschServiceStub serviceStub;
 
-    public SimpleGrpcClient(InetAddress inetAddress) {
-        managedChannel = OkHttpChannelBuilder.forAddress(inetAddress.getHost(), inetAddress.getPort())
+    public SimpleGrpcClient(HostPortAddress hostPortAddress) {
+        managedChannel = OkHttpChannelBuilder.forAddress(hostPortAddress.getHost(), hostPortAddress.getPort())
                 .usePlaintext(true)
                 .idleTimeout(1, TimeUnit.MINUTES)
                 .build();

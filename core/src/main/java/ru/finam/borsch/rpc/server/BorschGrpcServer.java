@@ -35,10 +35,8 @@ public class BorschGrpcServer {
 
 
     private void stop() {
-        if (server != null) {
-            healthConsumer.accept(false);
-            server.shutdown();
-        }
+        healthConsumer.accept(false);
+        server.shutdown();
     }
 
     private void blockUntilShutdown() throws InterruptedException {

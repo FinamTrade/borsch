@@ -1,6 +1,6 @@
 package servers;
 
-import ru.finam.borsch.InetAddress;
+import ru.finam.borsch.HostPortAddress;
 
 /**
  * Created by akhaymovich on 16.10.17.
@@ -8,8 +8,9 @@ import ru.finam.borsch.InetAddress;
 public class HungryBorschEater extends AbstractBorschEater {
 
 
-    public HungryBorschEater(InetAddress grpcBorschAddress, String consulHost, int consulPort, int shard) {
-        super(grpcBorschAddress, consulHost, consulPort, shard);
+    public HungryBorschEater(HostPortAddress grpcBorschAddress,
+                             int shard) {
+        super(grpcBorschAddress, shard);
     }
 
     @Override
@@ -17,22 +18,19 @@ public class HungryBorschEater extends AbstractBorschEater {
         return "HungryBorschEater";
     }
 
-    private static final String consulHost = "consul-agent";
-    private static final int consulPort = 8500;
-
 
     public static void main(String[] args) {
-        InetAddress grpcAddress = new InetAddress("localhost", 50103);
+        HostPortAddress grpcAddress = new HostPortAddress("localhost", 50103);
 
 
         HungryBorschEater hungryBorschEater =
-                new HungryBorschEater(grpcAddress, consulHost, consulPort, 1);
+                new HungryBorschEater(grpcAddress, 1);
 
         hungryBorschEater.registerService();
 
 
         hungryBorschEater.launchBorsch();
-        while (true){
+        while (true) {
 
         }
     }
