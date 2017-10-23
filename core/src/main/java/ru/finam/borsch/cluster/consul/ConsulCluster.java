@@ -22,8 +22,7 @@ import ru.finam.borsch.rpc.client.BorschClientManager;
 
 import java.util.*;
 import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -45,6 +44,8 @@ public class ConsulCluster extends Cluster {
     private final MemberListener memberListener;
     private final ServerHolder serverHolder;
     private final int grpcPort;
+    private final ScheduledThreadPoolExecutor scheduledExecutor;
+    private static final int HEALTH_LISTENER_TIMEOUT = 12000;
 
 
     private final Consumer<Boolean> healthConsumer = new Consumer<Boolean>() {
@@ -52,7 +53,7 @@ public class ConsulCluster extends Cluster {
         public void accept(Boolean grpcWorking) {
             if (grpcWorking) {
                 registerCheck();
-                userHealthService.scheduleWithFixedDelay(() -> {
+                scheduledExecutor.scheduleWithFixedDelay(() -> {
                     try {
                         agentClient.check(borschIdCheck, State.PASS, "pass");
                     } catch (NotRegisteredException e) {
@@ -65,13 +66,13 @@ public class ConsulCluster extends Cluster {
         }
     };
 
-    private final ScheduledExecutorService userHealthService =
-            Executors.newScheduledThreadPool(1);
-
 
     public ConsulCluster(BorschClientManager borschClientManager,
-                         BorschSettings borschSettings) {
+                         BorschSettings borschSettings,
+                         ScheduledThreadPoolExecutor scheduledExecutor) {
         super(borschClientManager);
+        this.scheduledExecutor = scheduledExecutor;
+
         this.serviceHolderName = borschSettings.getServiceHolderName();
         Consul consul = Consul.builder()
                 .withHostAndPort(HostAndPort.fromParts(borschSettings.getConsulHost(),
@@ -91,30 +92,30 @@ public class ConsulCluster extends Cluster {
 
     private void createHealthListener() {
         ServiceHealthCache svHealth = ServiceHealthCache.newCache(healthClient, serviceHolderName,
-                false, 12000, ImmutableQueryOptions.builder().build());
+                false, HEALTH_LISTENER_TIMEOUT, ImmutableQueryOptions.builder().build());
 
-        svHealth.addListener(newValues -> {
-            for (Map.Entry<ServiceHealthKey, ServiceHealth> servEntry : newValues.entrySet()) {
-                ServiceHealth serviceHealth = servEntry.getValue();
-                ServiceHealthKey healthKey = servEntry.getKey();
+        scheduledExecutor.scheduleAtFixedRate(() ->
+                svHealth.addListener(newValues -> {
+                    for (Map.Entry<ServiceHealthKey, ServiceHealth> servEntry : newValues.entrySet()) {
+                        ServiceHealth serviceHealth = servEntry.getValue();
+                        ServiceHealthKey healthKey = servEntry.getKey();
 
-                List<String> tags = serviceHealth.getService().getTags();
-                int port = parseTag(tags);
-                int checkSize = serviceHealth.getChecks().size();
-                serviceHealth.getChecks().stream()
-                        .forEach(healthCheck -> System.out.println(healthCheck.getStatus()));
-                long healthyChecks = serviceHealth.getChecks().stream()
-                        .filter(healthCheck -> healthCheck.getStatus().equals("passing"))
-                        .count();
-                HostPortAddress hostPortAddress = new HostPortAddress(serviceHealth.getNode().getAddress(),
-                        port);
-                if (checkSize > healthyChecks) {
-                    memberListener.onLeave(hostPortAddress);
-                } else {
-                    memberListener.onJoin(hostPortAddress);
-                }
-            }
-        });
+                        List<String> tags = serviceHealth.getService().getTags();
+                        int port = parseTag(tags);
+                        int checkSize = serviceHealth.getChecks().size();
+                        long healthyChecks = serviceHealth.getChecks().stream()
+                                .filter(healthCheck -> healthCheck.getStatus().equals("passing"))
+                                .count();
+                        HostPortAddress hostPortAddress = new HostPortAddress(serviceHealth.getNode().getAddress(),
+                                port);
+                        if (checkSize > healthyChecks) {
+                            memberListener.onLeave(hostPortAddress);
+                        } else {
+                            memberListener.onJoin(hostPortAddress);
+                        }
+                    }
+                }), 0, HEALTH_LISTENER_TIMEOUT, TimeUnit.MILLISECONDS
+        );
 
         try {
             svHealth.start();
