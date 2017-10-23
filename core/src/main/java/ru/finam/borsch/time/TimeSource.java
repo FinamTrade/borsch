@@ -9,6 +9,12 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -21,17 +27,16 @@ public class TimeSource {
 
     private final static Logger LOG = LoggerFactory.getLogger(TimeSource.class);
     private final static long PERIOD = 100L;
-
     private FluxSink<Long> timeFluxSink;
     private final Consumer<FluxSink<Long>> timeConsumer = timeFluxSink -> {
         this.timeFluxSink = timeFluxSink;
     };
-
     private final Flux<Long> fluxTime = Flux.create(timeConsumer).share();
-    private final Scheduler scheduler = Schedulers.newSingle("timer source");
+    private final Scheduler scheduler;
 
 
-    public TimeSource() {
+    public TimeSource(ExecutorService executorService) {
+        scheduler = Schedulers.fromExecutorService(executorService);
         scheduler.schedulePeriodically(() -> {
             long currentTime = System.currentTimeMillis();
             timeFluxSink.next(currentTime);

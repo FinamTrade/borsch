@@ -3,7 +3,6 @@ package ru.finam.borsch.cluster.consul;
 import com.google.common.net.HostAndPort;
 import com.google.protobuf.ByteString;
 import com.orbitz.consul.*;
-import com.orbitz.consul.cache.ConsulCache;
 import com.orbitz.consul.cache.ServiceHealthCache;
 import com.orbitz.consul.cache.ServiceHealthKey;
 import com.orbitz.consul.model.State;
@@ -11,7 +10,6 @@ import com.orbitz.consul.model.agent.ImmutableCheck;
 import com.orbitz.consul.model.catalog.CatalogService;
 import com.orbitz.consul.model.health.ServiceHealth;
 import com.orbitz.consul.option.ImmutableQueryOptions;
-import com.orbitz.consul.option.QueryOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.finam.borsch.BorschSettings;
@@ -37,14 +35,10 @@ import java.util.function.Consumer;
 public class ConsulCluster extends Cluster {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConsulCluster.class);
-    private static final int BORSCH_CHECK_PERIOD = 10;
-    private static final int MASTER_SERVICE_CHECK = 1;
-    private static final TimeUnit MASTER_CHECK_TIME = TimeUnit.SECONDS;
+    private static final int BORSCH_CHECK_PERIOD = 1000;
 
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final AgentClient agentClient;
     private final HealthClient healthClient;
-    private final CatalogClient catalogClient;
     private final String serviceHolderName;
     private final String serviceHolderId;
     private final String borschIdCheck;
@@ -58,7 +52,6 @@ public class ConsulCluster extends Cluster {
         public void accept(Boolean grpcWorking) {
             if (grpcWorking) {
                 registerCheck();
-                createHealthListener();
                 userHealthService.scheduleWithFixedDelay(() -> {
                     try {
                         agentClient.check(borschIdCheck, State.PASS, "pass");
@@ -66,7 +59,7 @@ public class ConsulCluster extends Cluster {
                         LOG.error(e.getMessage(), e);
                     }
                 }, 0, BORSCH_CHECK_PERIOD, TimeUnit.SECONDS);
-                healthNotifier();
+                createHealthListener();
                 synchronizeData();
             }
         }
@@ -83,11 +76,10 @@ public class ConsulCluster extends Cluster {
         Consul consul = Consul.builder()
                 .withHostAndPort(HostAndPort.fromParts(borschSettings.getConsulHost(),
                         borschSettings.getConsulPort()))
-                .withReadTimeoutMillis(60 * 100000000)
+                .withReadTimeoutMillis(60 * 1000L)
                 .build();
         this.agentClient = consul.agentClient();
         this.healthClient = consul.healthClient();
-        this.catalogClient = consul.catalogClient();
         this.serviceHolderId = borschSettings.getServiceHolderId();
         this.borschIdCheck = "borsch_" + serviceHolderId;
         HostPortAddress ownAddress = discoverOwnAddress(consul);
@@ -98,25 +90,36 @@ public class ConsulCluster extends Cluster {
     }
 
     private void createHealthListener() {
-
-
-        QueryOptions queryOptions = ImmutableQueryOptions.builder()
-                .datacenter("dc1")
-                .build();
         ServiceHealthCache svHealth = ServiceHealthCache.newCache(healthClient, serviceHolderName,
-                false, 12000, queryOptions);
+                false, 12000, ImmutableQueryOptions.builder().build());
 
-        svHealth.addListener(new ConsulCache.Listener<ServiceHealthKey, ServiceHealth>() {
-            @Override
-            public void notify(Map<ServiceHealthKey, ServiceHealth> newValues) {
-                System.out.println("changes : " + newValues.size());
+        svHealth.addListener(newValues -> {
+            for (Map.Entry<ServiceHealthKey, ServiceHealth> servEntry : newValues.entrySet()) {
+                ServiceHealth serviceHealth = servEntry.getValue();
+                ServiceHealthKey healthKey = servEntry.getKey();
+
+                List<String> tags = serviceHealth.getService().getTags();
+                int port = parseTag(tags);
+                int checkSize = serviceHealth.getChecks().size();
+                serviceHealth.getChecks().stream()
+                        .forEach(healthCheck -> System.out.println(healthCheck.getStatus()));
+                long healthyChecks = serviceHealth.getChecks().stream()
+                        .filter(healthCheck -> healthCheck.getStatus().equals("passing"))
+                        .count();
+                HostPortAddress hostPortAddress = new HostPortAddress(serviceHealth.getNode().getAddress(),
+                        port);
+                if (checkSize > healthyChecks) {
+                    memberListener.onLeave(hostPortAddress);
+                } else {
+                    memberListener.onJoin(hostPortAddress);
+                }
             }
         });
 
         try {
             svHealth.start();
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error(e.getMessage(), e);
         }
     }
 
@@ -135,7 +138,7 @@ public class ConsulCluster extends Cluster {
                 .id(borschIdCheck)
                 .serviceId(serviceHolderId)
                 .name("borschId")
-                .ttl(2 * BORSCH_CHECK_PERIOD + "s")
+                .ttl(5 * BORSCH_CHECK_PERIOD + "ms")
                 .notes("borschHealth")
                 .build();
         agentClient.registerCheck(options);
@@ -143,42 +146,6 @@ public class ConsulCluster extends Cluster {
                 agentClient.deregisterCheck(borschIdCheck)));
     }
 
-    private void healthNotifier() {
-        List<ServiceHealth> healthList = new ArrayList<>();//loadHealthyInstances();
-        long time = System.currentTimeMillis();
-        healthList.forEach(serviceHealth -> {
-            String host = serviceHealth.getService().getAddress();
-            if (!serviceHealth.getService().getId().equals(serviceHolderId)) {
-                long borschHealthCheck = serviceHealth.getChecks().stream().filter(check -> check.getCheckId().contains("borsch")).count();
-                if (borschHealthCheck != 0) {
-                    int grpcPort = parseTag(serviceHealth.getService().getTags());
-                    HostPortAddress hostPortAddress = new HostPortAddress(host, grpcPort);
-                    if (!inetAddressMap.containsKey(hostPortAddress) &&
-                            !serviceHealth.getService().getId().equals(serviceHolderId)) {
-                        memberListener.onJoin(hostPortAddress);
-                    }
-                    inetAddressMap.put(hostPortAddress, time);
-                }
-            }
-        });
-        Set<HostPortAddress> diedServers = new HashSet<>();
-        inetAddressMap.entrySet().stream()
-                .filter(healthEntry -> healthEntry.getValue() < time)
-                .forEach(entry -> {
-                    HostPortAddress diedServer = entry.getKey();
-                    memberListener.onLeave(diedServer);
-                    diedServers.add(diedServer);
-                });
-        for (HostPortAddress hostPortAddress : diedServers) {
-            inetAddressMap.remove(hostPortAddress);
-        }
-        scheduler.schedule(this::healthNotifier, MASTER_SERVICE_CHECK, MASTER_CHECK_TIME);
-    }
-
-//    private List<ServiceHealth> loadHealthyInstances() {
-//        return healthClient.getHealthyServiceInstances(serviceHolderName)
-//                .getResponse();
-//    }
 
     private static int parseTag(List<String> tags) {
         Optional<String> borschTag =
@@ -187,12 +154,6 @@ public class ConsulCluster extends Cluster {
             return -1;
         }
         return Integer.parseInt(borschTag.get().split("=")[1]);
-    }
-
-    @Override
-    public void start() {
-        healthNotifier();
-        registerCheck();
     }
 
     @Override

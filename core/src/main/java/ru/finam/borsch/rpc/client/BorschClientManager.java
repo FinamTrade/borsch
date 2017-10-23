@@ -43,11 +43,11 @@ public class BorschClientManager {
         ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
         readLock.lock();
         try {
-       //     LOG.info("Having {} neiboors  {}", activeClientList.size(), activeClientList);
+            //     LOG.info("Having {} neiboors  {}", activeClientList.size(), activeClientList);
             activeClientList
                     .forEach(client -> {
                         client.put(putRequest, resultListener);
-                      //  LOG.info("CLient address {} ", client.getHostPortAddress());
+                        //  LOG.info("CLient address {} ", client.getHostPortAddress());
 
                     });
         } finally {
@@ -60,7 +60,8 @@ public class BorschClientManager {
         ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
         writeLock.lock();
         try {
-            activeClientList.add(newCient);
+
+                activeClientList.add(newCient);
 
         } finally {
             writeLock.unlock();

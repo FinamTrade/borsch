@@ -23,7 +23,5 @@ public abstract class Cluster implements ClusterInfo{
         borschClientManager.onClusterStart(inetAddressMap.keySet());
     }
 
-    public abstract void start();
-
     public abstract Consumer<Boolean> getHealthListener();
 }

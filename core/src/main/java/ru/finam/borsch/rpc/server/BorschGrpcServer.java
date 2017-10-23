@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 /**
@@ -23,11 +22,11 @@ public class BorschGrpcServer {
     private final Consumer<Boolean> healthConsumer;
     private final Server server;
 
-    public BorschGrpcServer(BorschServiceApi serviceApi,
+    public BorschGrpcServer(ExecutorService executor,
+                            BorschServiceApi serviceApi,
                             int port,
                             Consumer<Boolean> healthConsumer) {
-        this.executor = Executors.newFixedThreadPool(
-                Math.max(8, Runtime.getRuntime().availableProcessors() * 2));
+        this.executor = executor;
         this.server = createServer(serviceApi, port);
         this.port = port;
         this.healthConsumer = healthConsumer;

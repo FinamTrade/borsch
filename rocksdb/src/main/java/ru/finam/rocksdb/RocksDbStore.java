@@ -40,8 +40,7 @@ public class RocksDbStore implements Store {
             familyList = families.stream()
                     .map(familyName -> new ColumnFamilyDescriptor(familyName))
                     .collect(Collectors.toList());
-            familyList.add(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY));
-
+            families.stream().forEach(bytes -> System.out.println(new String(bytes)));
         } catch (RocksDBException e) {
             LOG.error(e.getMessage(), e);
             throw new RuntimeException("Coudn't load db from " + location);
@@ -57,9 +56,12 @@ public class RocksDbStore implements Store {
         }
 
         for (int i = 0; i < familyList.size(); i++) {
-            String columnFamilyName = new String(familyList.get(i).columnFamilyName());
+            byte[] columnName = familyList.get(i).columnFamilyName();
+            if (columnName.length == 0) {
+                continue;
+            }
+            String columnFamilyName = new String(columnName);
             handles.put(columnFamilyName, columns.get(i));
-            i++;
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {

@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.finam.borsch.HostPortAddress;
 import ru.finam.borsch.rpc.server.BorschServiceApi;
+
+import java.util.Collections;
 import java.util.List;
 
 
@@ -24,8 +26,9 @@ public class ServerHolder {
 
     public ServerHolder(HostPortAddress ownAddress,
                         List<HostPortAddress> addressList) {
-        this.addressList = addressList;
         addressList.add(ownAddress);
+        Collections.sort(addressList, HostPortAddress.PORT_ADDRESS_COMPARATOR);
+        this.addressList = addressList;
         this.ownAddress = ownAddress;
         this.hashingRing = new KetamaHashingRing(addressList);
         LOG.info("Hash ring initialized. Num of servers : {}", addressList.size());
@@ -34,8 +37,11 @@ public class ServerHolder {
 
     void addNewServer(HostPortAddress hostPortAddress) {
         LOG.info("Add new server {}", hostPortAddress);
-        addressList.add(hostPortAddress);
-        hashingRing = new KetamaHashingRing(addressList);
+        if (!addressList.contains(hostPortAddress)) {
+            addressList.add(hostPortAddress);
+            hashingRing = new KetamaHashingRing(addressList);
+        }
+        Collections.sort(addressList, HostPortAddress.PORT_ADDRESS_COMPARATOR);
     }
 
     void removeServer(HostPortAddress hostPortAddress) {

@@ -16,7 +16,7 @@ import java.util.function.Consumer;
  * CLient of grpc server
  * Created by akhaymovich on 20.09.17.
  */
-class BorschServiceClient {
+public class BorschServiceClient {
 
     private static final Logger LOG = LoggerFactory.getLogger(BorschServiceClient.class);
 

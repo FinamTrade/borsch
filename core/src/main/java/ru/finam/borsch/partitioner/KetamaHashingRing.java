@@ -14,7 +14,7 @@ import java.util.TreeMap;
 public class KetamaHashingRing {
 
     private static final Logger LOG = LoggerFactory.getLogger(KetamaHashingRing.class);
-    private static TreeMap<Long, HostPortAddress> buckets;
+    private final TreeMap<Long, HostPortAddress> buckets;
 
     public KetamaHashingRing(List<HostPortAddress> servers) {
         buckets = new TreeMap<>();

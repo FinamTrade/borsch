@@ -12,6 +12,7 @@ import ru.finam.rocksdb.Store;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -25,7 +26,7 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
     private static final int MAX_REQUEST_SIZE = 200;
     private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
 
-    private final TimeSource timeSource = new TimeSource();
+    private final TimeSource timeSource;
     private final Store store;
     private final BorschClientManager borschClientManager;
     private final ClusterInfo cluster;
@@ -33,12 +34,14 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
     private static final Logger LOG = LoggerFactory.getLogger(BorschServiceApi.class);
 
 
-    public BorschServiceApi(Store store,
+    public BorschServiceApi(ScheduledExecutorService executorService,
+                            Store store,
                             ClusterInfo clusterInfo,
                             BorschClientManager borschClientManager) {
         this.store = store;
         this.borschClientManager = borschClientManager;
         this.cluster = clusterInfo;
+        this.timeSource = new TimeSource(executorService);
     }
 
 
