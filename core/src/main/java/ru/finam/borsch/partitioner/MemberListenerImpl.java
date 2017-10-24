@@ -16,18 +16,18 @@ public class MemberListenerImpl implements MemberListener {
     private static final Logger LOG = LoggerFactory.getLogger(MemberListenerImpl.class);
 
     private final BorschClientManager borschClientManager;
-    private final ServerHolder serverHolder;
+    private final ServerDistributionHolder serverDistributionHolder;
 
 
     public MemberListenerImpl(BorschClientManager borschClientManager,
-                              ServerHolder serverHolder) {
+                              ServerDistributionHolder serverDistributionHolder) {
         this.borschClientManager = borschClientManager;
-        this.serverHolder = serverHolder;
+        this.serverDistributionHolder = serverDistributionHolder;
     }
 
     @Override
     public void onJoin(HostPortAddress grpcAddress) {
-        serverHolder.addNewServer(grpcAddress);
+        serverDistributionHolder.onJoin(grpcAddress);
         borschClientManager.onAddingNewServer(grpcAddress);
         LOG.info("{}  joined cluster ", grpcAddress);
     }
@@ -35,7 +35,7 @@ public class MemberListenerImpl implements MemberListener {
     @Override
     public void onLeave(HostPortAddress grpcAddress) {
         borschClientManager.onShutdownServer(grpcAddress);
-        serverHolder.removeServer(grpcAddress);
+        serverDistributionHolder.onLeave(grpcAddress);
         LOG.info("{} left cluster ", grpcAddress);
     }
 }

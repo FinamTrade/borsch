@@ -32,7 +32,7 @@ class BorschFactory {
     BorschFactory(BorschSettings borschSettings) {
         Store store = new RocksDbStore(borschSettings.getPathToDb());
         BorschClientManager borschClientManager = new BorschClientManager(store);
-        cluster = new ConsulCluster(borschClientManager, borschSettings);
+        cluster = new ConsulCluster(borschClientManager, borschSettings, scheduledExecutor);
         BorschServiceApi borschServiceApi = new BorschServiceApi(scheduledExecutor, store, cluster, borschClientManager);
         grpcServer = new BorschGrpcServer(scheduledExecutor, borschServiceApi, cluster.grpcPort(), cluster.getHealthListener());
         LOG.info("Borsch cluster created for service {}", borschSettings.getServiceHolderId());
@@ -41,8 +41,6 @@ class BorschFactory {
     void start() {
         LOG.info("Start grpc");
         grpcServer.start();
-        LOG.info("Start cluster");
-        cluster.start();
     }
 
 }

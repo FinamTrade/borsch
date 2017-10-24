@@ -8,8 +8,16 @@ import com.google.protobuf.ByteString;
  */
 public interface ClusterInfo {
 
-   int quorum();
    int numOfMembers();
    int grpcPort();
    boolean isMyData(ByteString shardKey);
+
+   default int quorum(){
+      int size = numOfMembers();
+      if (size <= 2) {
+         return size;
+      } else {
+         return size / 2 + 1;
+      }
+   }
 }
