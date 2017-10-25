@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.finam.borsch.HostPortAddress;
 import ru.finam.rocksdb.Store;
+
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -24,10 +25,7 @@ public class BorschServiceClient {
     private final HostPortAddress hostPortAddress;
     private final Store store;
 
-
-    BorschServiceClient(
-            HostPortAddress hostPortAddress,
-            Store store) {
+    BorschServiceClient(HostPortAddress hostPortAddress, Store store) {
         ManagedChannel managedChannel = OkHttpChannelBuilder.forAddress(hostPortAddress.getHost(), hostPortAddress.getPort())
                 .usePlaintext(true)
                 .idleTimeout(1, TimeUnit.MINUTES)

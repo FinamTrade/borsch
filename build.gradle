@@ -6,6 +6,7 @@ subprojects {
     repositories {
         maven {
             url 'https://artifact.finam.ru/artifactory/cb-maven-repo/'
+            mavenCentral()
         }
     }
 

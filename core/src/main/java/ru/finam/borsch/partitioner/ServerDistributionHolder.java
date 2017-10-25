@@ -6,12 +6,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.finam.borsch.HostPortAddress;
 import ru.finam.borsch.rpc.server.BorschServiceApi;
-
 import java.util.*;
 
 
 /**
- * Server partitioner. Use in one thread
+ * Server partitioner
  * Created by akhaymovich on 14.09.17.
  */
 public class ServerDistributionHolder {
@@ -22,6 +21,7 @@ public class ServerDistributionHolder {
 
     private SortedSet<HostPortAddress> addressSet = new TreeSet<>();
     private KetamaHashingRing hashingRing;
+    private Object addressLock = new Object();
 
     public ServerDistributionHolder(HostPortAddress ownAddress,
                                     List<HostPortAddress> addressList) {
@@ -35,16 +35,23 @@ public class ServerDistributionHolder {
 
     void onJoin(HostPortAddress hostPortAddress) {
         LOG.info("Add new server {}", hostPortAddress);
-        if (!addressSet.contains(hostPortAddress)) {
-            addressSet.add(hostPortAddress);
-            hashingRing = new KetamaHashingRing(addressSet);
+        synchronized (addressLock) {
+            if (!addressSet.contains(hostPortAddress)) {
+                addressSet.add(hostPortAddress);
+                hashingRing = new KetamaHashingRing(addressSet);
+            }
         }
     }
 
     void onLeave(HostPortAddress hostPortAddress) {
         LOG.info("Server leave {}", hostPortAddress);
-        addressSet.remove(hostPortAddress);
-        hashingRing = new KetamaHashingRing(addressSet);
+        if (hostPortAddress.equals(ownAddress)){
+            return;
+        }
+        synchronized (addressLock) {
+            addressSet.remove(hostPortAddress);
+            hashingRing = new KetamaHashingRing(addressSet);
+        }
     }
 
     public boolean isMyData(ByteString accountHash) {

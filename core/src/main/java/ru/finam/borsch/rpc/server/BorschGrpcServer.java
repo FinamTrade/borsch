@@ -2,6 +2,7 @@ package ru.finam.borsch.rpc.server;
 
 import io.grpc.*;
 import io.grpc.netty.NettyServerBuilder;
+import io.grpc.services.HealthStatusManager;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,8 @@ public class BorschGrpcServer {
     private final int port;
     private final Consumer<Boolean> healthConsumer;
     private final Server server;
+    private final HealthStatusManager healthStatusManager = new HealthStatusManager();
+
 
     public BorschGrpcServer(ExecutorService executor,
                             BorschServiceApi serviceApi,
@@ -46,7 +49,6 @@ public class BorschGrpcServer {
 
 
     private Server createServer(BorschServiceApi serviceApi, int port) {
-
         CompressorRegistry registry = CompressorRegistry
                 .newEmptyInstance();
         registry.register(new Codec.Gzip());
@@ -56,6 +58,7 @@ public class BorschGrpcServer {
                 .executor(executor)
                 .compressorRegistry(registry)
                 .addService(serviceApi)
+                .addService(healthStatusManager.getHealthService())
                 .build();
     }
 

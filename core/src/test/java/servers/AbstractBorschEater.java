@@ -7,19 +7,16 @@ import com.orbitz.consul.Consul;
 import com.orbitz.consul.model.agent.ImmutableRegistration;
 import ru.finam.borsch.BorschSettings;
 import ru.finam.borsch.HostPortAddress;
-import ru.finam.borsch.launch.StartPoint;
+import ru.finam.borsch.launch.BorschFactory;
 
 import java.util.List;
 
-/**
- * Created by akhaymovich on 08.10.17.
- */
 public abstract class AbstractBorschEater {
 
     private final AgentClient agentClient;
     private final List<String> borschTags;
     private final BorschSettings borschSettings;
-    private final HostPortAddress grpcBorschAddress;
+
     private static final String SERVICE_NAME = "dev-ftcore-borsch-eater";
     private final SimpleGrpcClient grpcClient;
     private final int shard;
@@ -28,8 +25,8 @@ public abstract class AbstractBorschEater {
     private static final int consulPort = 8500;
 
 
-    public AbstractBorschEater(HostPortAddress grpcBorschAddress,
-                                                           int shard) {
+    AbstractBorschEater(HostPortAddress grpcBorschAddress,
+                        int shard) {
         Consul consul = Consul.builder()
                 .withHostAndPort(HostAndPort.fromParts(consulHost,
                         consulPort))
@@ -42,12 +39,11 @@ public abstract class AbstractBorschEater {
                 consulPort, getServiceId(),
                 SERVICE_NAME,
                 "/var/lib/borsch/db/" + getServiceId());
-        this.grpcBorschAddress = grpcBorschAddress;
         this.grpcClient = new SimpleGrpcClient(grpcBorschAddress);
         this.shard = shard;
     }
 
-    public void registerService() {
+    void registerService() {
         String address = agentClient.getAgent().getMember().getAddress();
         ImmutableRegistration registration = ImmutableRegistration.builder()
                 .name(SERVICE_NAME)
@@ -57,14 +53,11 @@ public abstract class AbstractBorschEater {
                 .build();
         agentClient.register(registration);
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            agentClient.deregister(getServiceId());
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> agentClient.deregister(getServiceId())));
     }
 
-    public void launchBorsch() {
-        StartPoint startPoint = new StartPoint(borschSettings);
-        startPoint.launch();
+    void launchBorsch() {
+        BorschFactory.startBorsch(borschSettings);
         new BorschDataThread(grpcClient, shard, getServiceId());
     }
 

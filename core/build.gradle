@@ -5,5 +5,5 @@ dependencies {
     compile "io.grpc:grpc-all:${grpcVersion}"
     compile "com.google.guava:guava:${guava}"
     compile "io.projectreactor:reactor-core:${projectReactor}"
-    compile "io.grpc:grpc-services::${grpcVersion}"
+    compile "io.grpc:grpc-services:${grpcVersion}"
 }

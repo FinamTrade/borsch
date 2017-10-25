@@ -98,8 +98,6 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
 
     public void put(finam.protobuf.borsch.PutRequest request,
                     io.grpc.stub.StreamObserver<finam.protobuf.borsch.PutResponse> responseObserver) {
-
-        //     LOG.info("Service port: {}  shard {}" , cluster.grpcPort(), new String(request.getKv().getKey().getShardPart().toByteArray()));
         ByteString shardPart = request.getKv().getKey().getShardPart();
         if (cluster.isMyData(shardPart)) {
             int quorum;
@@ -117,9 +115,8 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
                 default:
                     try {
                         responseObserver.onNext(PutResponse.newBuilder().setResult(true).build());
-
                     } catch (Throwable e) {
-                        e.printStackTrace();
+                        LOG.error(e.getMessage(), e);
                     }
                     return;
             }
@@ -157,7 +154,7 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
             this.responseObserver = responseObserver;
             long currentTime = System.currentTimeMillis() + TIME_UNIT.toMillis(1000);
             timeSource.when(currentTime).subscribe(time -> {
-                if (succeedResp >= success){
+                if (succeedResp >= success) {
                     return;
                 }
                 responseObserver.onNext(PutResponse.newBuilder().setResult(false).build());

@@ -35,8 +35,8 @@ import java.util.function.Consumer;
 public class ConsulCluster extends Cluster {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConsulCluster.class);
-    private static final int BORSCH_CHECK_PERIOD = 1000;
-    private static final int HEALTH_LISTENER_TIMEOUT = 12000;
+    private static final int BORSCH_CHECK_PERIOD = 10000;
+    private static final int HEALTH_LISTENER_TIMEOUT = 1200;
 
     private final AgentClient agentClient;
     private final HealthClient healthClient;
@@ -48,21 +48,25 @@ public class ConsulCluster extends Cluster {
     private final ScheduledThreadPoolExecutor scheduledExecutor;
     private final int grpcPort;
 
+    private final HealthCheckClient healthCheckClient;
 
     private final Consumer<Boolean> healthConsumer = new Consumer<Boolean>() {
         @Override
         public void accept(Boolean grpcWorking) {
+            registerCheck();
             if (grpcWorking) {
                 scheduledExecutor.scheduleWithFixedDelay(() -> {
                     try {
+                        //   State state = healthCheckClient.startPing();
+                        //   System.out.println(state);
                         agentClient.check(borschIdCheck, State.PASS, "pass");
                     } catch (NotRegisteredException e) {
                         LOG.error(e.getMessage(), e);
                     }
-                }, 0, BORSCH_CHECK_PERIOD, TimeUnit.SECONDS);
+                }, 0, BORSCH_CHECK_PERIOD/10, TimeUnit.MILLISECONDS);
                 createHealthListener();
                 synchronizeData();
-                registerCheck();
+
             }
         }
     };
@@ -78,6 +82,7 @@ public class ConsulCluster extends Cluster {
                 .withHostAndPort(HostAndPort.fromParts(borschSettings.getConsulHost(),
                         borschSettings.getConsulPort()))
                 .withReadTimeoutMillis(60 * 1000L)
+
                 .build();
         this.agentClient = consul.agentClient();
         this.healthClient = consul.healthClient();
@@ -87,14 +92,13 @@ public class ConsulCluster extends Cluster {
         this.grpcPort = ownAddress.getPort();
         this.serverDistributionHolder = new ServerDistributionHolder(ownAddress, new ArrayList<>());
         this.memberListener = new MemberListenerImpl(borschClientManager, serverDistributionHolder);
+        this.healthCheckClient = new HealthCheckClient(ownAddress);
     }
 
     private void createHealthListener() {
         ServiceHealthCache svHealth = ServiceHealthCache.newCache(healthClient, serviceHolderName,
-                false, HEALTH_LISTENER_TIMEOUT, ImmutableQueryOptions.builder().build());
-
-        scheduledExecutor.scheduleAtFixedRate(() ->
-                svHealth.addListener(newValues -> {
+                false, 0, ImmutableQueryOptions.builder().build());
+        svHealth.addListener(newValues -> {
                     for (Map.Entry<ServiceHealthKey, ServiceHealth> servEntry : newValues.entrySet()) {
                         ServiceHealth serviceHealth = servEntry.getValue();
 
@@ -112,8 +116,9 @@ public class ConsulCluster extends Cluster {
                         } else if (isHaveBorschCheck(healthChecks)) {
                             memberListener.onJoin(hostPortAddress);
                         }
+
                     }
-                }), 0, HEALTH_LISTENER_TIMEOUT, TimeUnit.MILLISECONDS
+                }
         );
 
         try {

@@ -14,6 +14,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 
 /**
+ * Client keeper
  * Created by akhaymovich on 20.09.17.
  */
 public class BorschClientManager {
@@ -43,13 +44,8 @@ public class BorschClientManager {
         ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
         readLock.lock();
         try {
-            //     LOG.info("Having {} neiboors  {}", activeClientList.size(), activeClientList);
             activeClientList
-                    .forEach(client -> {
-                        client.put(putRequest, resultListener);
-                        //  LOG.info("CLient address {} ", client.getHostPortAddress());
-
-                    });
+                    .forEach(client -> client.put(putRequest, resultListener));
         } finally {
             readLock.unlock();
         }
@@ -61,7 +57,7 @@ public class BorschClientManager {
         writeLock.lock();
         try {
 
-                activeClientList.add(newCient);
+            activeClientList.add(newCient);
 
         } finally {
             writeLock.unlock();

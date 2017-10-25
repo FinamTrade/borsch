@@ -10,17 +10,19 @@ import ru.finam.borsch.rpc.server.BorschGrpcServer;
 import ru.finam.borsch.rpc.server.BorschServiceApi;
 import ru.finam.rocksdb.Store;
 import ru.finam.rocksdb.RocksDbStore;
-
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 /**
  * Create borsch instances
  * Created by akhaymovich on 20.09.17.
  */
-class BorschFactory {
+public class BorschFactory {
 
     private static final Logger LOG = LoggerFactory.getLogger(BorschFactory.class);
+
+    static {
+        System.setProperty("com.orbitz.consul.cache.backOffDelay", "0");
+    }
 
     private final BorschGrpcServer grpcServer;
     private final Cluster cluster;
@@ -29,7 +31,7 @@ class BorschFactory {
                     Runtime.getRuntime().availableProcessors() * 2));
 
 
-    BorschFactory(BorschSettings borschSettings) {
+    private BorschFactory(BorschSettings borschSettings) {
         Store store = new RocksDbStore(borschSettings.getPathToDb());
         BorschClientManager borschClientManager = new BorschClientManager(store);
         cluster = new ConsulCluster(borschClientManager, borschSettings, scheduledExecutor);
@@ -38,9 +40,13 @@ class BorschFactory {
         LOG.info("Borsch cluster created for service {}", borschSettings.getServiceHolderId());
     }
 
-    void start() {
-        LOG.info("Start grpc");
+    private void start() {
         grpcServer.start();
+    }
+
+    public static void startBorsch(BorschSettings borschSettings) {
+        BorschFactory factory = new BorschFactory(borschSettings);
+        factory.start();
     }
 
 }

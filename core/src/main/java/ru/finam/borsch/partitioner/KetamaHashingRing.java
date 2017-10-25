@@ -18,9 +18,7 @@ class KetamaHashingRing {
     private static final int NUM_OF_SEGMENTS = 1024;
     private static final HashFunction MD5_HASH = Hashing.md5();
 
-
     private final TreeMap<Long, HostPortAddress> buckets;
-
 
     KetamaHashingRing(SortedSet<HostPortAddress> servers) {
         buckets = new TreeMap<>();
@@ -45,6 +43,9 @@ class KetamaHashingRing {
 
 
     HostPortAddress getServer(String key) {
+        if (buckets.isEmpty()){
+            throw new RuntimeException("Invalid empty buckets");
+        }
         if (buckets.size() == 1) {
             return buckets.firstEntry().getValue();
         }
