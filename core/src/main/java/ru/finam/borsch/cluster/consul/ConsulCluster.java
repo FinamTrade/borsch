@@ -3,14 +3,14 @@ package ru.finam.borsch.cluster.consul;
 import com.google.common.net.HostAndPort;
 import com.google.protobuf.ByteString;
 import com.orbitz.consul.*;
-import com.orbitz.consul.cache.ServiceHealthCache;
-import com.orbitz.consul.cache.ServiceHealthKey;
+import com.orbitz.consul.async.ConsulResponseCallback;
+import com.orbitz.consul.model.ConsulResponse;
 import com.orbitz.consul.model.State;
 import com.orbitz.consul.model.agent.ImmutableCheck;
 import com.orbitz.consul.model.catalog.CatalogService;
 import com.orbitz.consul.model.health.HealthCheck;
 import com.orbitz.consul.model.health.ServiceHealth;
-import com.orbitz.consul.option.ImmutableQueryOptions;
+import com.orbitz.consul.option.QueryOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.finam.borsch.BorschSettings;
@@ -21,10 +21,12 @@ import ru.finam.borsch.partitioner.ServerDistributionHolder;
 import ru.finam.borsch.partitioner.MemberListenerImpl;
 import ru.finam.borsch.rpc.client.BorschClientManager;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.Optional;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 
@@ -36,7 +38,6 @@ public class ConsulCluster extends Cluster {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConsulCluster.class);
     private static final int BORSCH_CHECK_PERIOD = 10000;
-    private static final int HEALTH_LISTENER_TIMEOUT = 1200;
 
     private final AgentClient agentClient;
     private final HealthClient healthClient;
@@ -47,8 +48,30 @@ public class ConsulCluster extends Cluster {
     private final ServerDistributionHolder serverDistributionHolder;
     private final ScheduledThreadPoolExecutor scheduledExecutor;
     private final int grpcPort;
+    private final AtomicReference<BigInteger> index = new AtomicReference<>(BigInteger.ZERO);
+    private final HostPortAddress ownAddress;
 
-    private final HealthCheckClient healthCheckClient;
+
+
+    private final ConsulResponseCallback<List<ServiceHealth>> healthCallback =
+            new ConsulResponseCallback<List<ServiceHealth>>() {
+
+                @Override
+                public void onComplete(ConsulResponse<List<ServiceHealth>> consulResponse) {
+                    healthNotifier(consulResponse.getResponse());
+                    if (index.get().equals(BigInteger.ZERO)){
+                        synchronizeData();
+                    }
+                    index.set(consulResponse.getIndex());
+                    loadHealthyInstances(index);
+                }
+
+                @Override
+                public void onFailure(Throwable throwable) {
+                    LOG.debug("Timeout on blocking query ", throwable);
+                    loadHealthyInstances(index);
+                }
+            };
 
     private final Consumer<Boolean> healthConsumer = new Consumer<Boolean>() {
         @Override
@@ -57,16 +80,12 @@ public class ConsulCluster extends Cluster {
             if (grpcWorking) {
                 scheduledExecutor.scheduleWithFixedDelay(() -> {
                     try {
-                        //   State state = healthCheckClient.startPing();
-                        //   System.out.println(state);
                         agentClient.check(borschIdCheck, State.PASS, "pass");
                     } catch (NotRegisteredException e) {
                         LOG.error(e.getMessage(), e);
                     }
-                }, 0, BORSCH_CHECK_PERIOD/10, TimeUnit.MILLISECONDS);
-                createHealthListener();
-                synchronizeData();
-
+                }, 0, BORSCH_CHECK_PERIOD, TimeUnit.MILLISECONDS);
+                loadHealthyInstances(index);
             }
         }
     };
@@ -90,42 +109,16 @@ public class ConsulCluster extends Cluster {
         this.borschIdCheck = "borsch_" + serviceHolderId;
         HostPortAddress ownAddress = discoverOwnAddress(consul);
         this.grpcPort = ownAddress.getPort();
+        this.ownAddress = ownAddress;
         this.serverDistributionHolder = new ServerDistributionHolder(ownAddress, new ArrayList<>());
         this.memberListener = new MemberListenerImpl(borschClientManager, serverDistributionHolder);
-        this.healthCheckClient = new HealthCheckClient(ownAddress);
     }
 
-    private void createHealthListener() {
-        ServiceHealthCache svHealth = ServiceHealthCache.newCache(healthClient, serviceHolderName,
-                false, 0, ImmutableQueryOptions.builder().build());
-        svHealth.addListener(newValues -> {
-                    for (Map.Entry<ServiceHealthKey, ServiceHealth> servEntry : newValues.entrySet()) {
-                        ServiceHealth serviceHealth = servEntry.getValue();
-
-                        List<String> tags = serviceHealth.getService().getTags();
-                        int port = parseTag(tags);
-                        List<HealthCheck> healthChecks = serviceHealth.getChecks();
-                        int checkSize = healthChecks.size();
-                        long healthyChecks = healthChecks.stream()
-                                .filter(healthCheck -> healthCheck.getStatus().equals("passing"))
-                                .count();
-                        HostPortAddress hostPortAddress = new HostPortAddress(serviceHealth.getNode().getAddress(),
-                                port);
-                        if (checkSize > healthyChecks) {
-                            memberListener.onLeave(hostPortAddress);
-                        } else if (isHaveBorschCheck(healthChecks)) {
-                            memberListener.onJoin(hostPortAddress);
-                        }
-
-                    }
-                }
-        );
-
-        try {
-            svHealth.start();
-        } catch (Exception e) {
-            LOG.error(e.getMessage(), e);
-        }
+    private void loadHealthyInstances(AtomicReference<BigInteger> index) {
+        healthClient.getHealthyServiceInstances(
+                serviceHolderName,
+                QueryOptions.blockMinutes(5, index.get()).build(),
+                healthCallback);
     }
 
     private boolean isHaveBorschCheck(List<HealthCheck> checkList) {
@@ -149,12 +142,42 @@ public class ConsulCluster extends Cluster {
                 .id(borschIdCheck)
                 .serviceId(serviceHolderId)
                 .name("borschId")
-                .ttl(5 * BORSCH_CHECK_PERIOD + "ms")
+                .ttl(10 * BORSCH_CHECK_PERIOD + "ms")
                 .notes("borschHealth")
                 .build();
         agentClient.registerCheck(options);
         Runtime.getRuntime().addShutdownHook(new Thread(() ->
                 agentClient.deregisterCheck(borschIdCheck)));
+    }
+
+    private void healthNotifier(List<ServiceHealth> healthList) {
+        long time = System.currentTimeMillis();
+        healthList.forEach(serviceHealth -> {
+            String host = serviceHealth.getService().getAddress();
+            if (!serviceHealth.getService().getId().equals(serviceHolderId)) {
+                long borschHealthCheck = serviceHealth.getChecks().stream().filter(check -> check.getCheckId().contains("borsch")).count();
+                if (borschHealthCheck != 0) {
+                    int grpcPort = parseTag(serviceHealth.getService().getTags());
+                    HostPortAddress inetAddress = new HostPortAddress(host, grpcPort);
+                    if (!inetAddressMap.containsKey(inetAddress) &&
+                            !serviceHealth.getService().getId().equals(serviceHolderId)                           ) {
+                        memberListener.onJoin(inetAddress);
+                    }
+                    inetAddressMap.put(inetAddress, time);
+                }
+            }
+        });
+        Set<HostPortAddress> diedServers = new HashSet<>();
+        inetAddressMap.entrySet().stream()
+                .filter(healthEntry -> healthEntry.getValue() < time)
+                .forEach(entry -> {
+                    HostPortAddress diedServer = entry.getKey();
+                    memberListener.onLeave(diedServer);
+                    diedServers.add(diedServer);
+                });
+        for (HostPortAddress inetAddress : diedServers) {
+            inetAddressMap.remove(inetAddress);
+        }
     }
 
 

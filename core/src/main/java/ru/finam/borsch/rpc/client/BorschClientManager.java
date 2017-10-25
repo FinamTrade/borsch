@@ -33,8 +33,7 @@ public class BorschClientManager {
         hostPortAddressList.forEach(this::onAddingNewServer);
         activeClientList.forEach(
                 client -> {
-                    LOG.info("Asking for snapshot from client {} ", client.getHostPortAddress());
-                    client.askForSnapshot();
+                     client.askForSnapshot();
                 }
         );
     }
@@ -56,9 +55,7 @@ public class BorschClientManager {
         ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
         writeLock.lock();
         try {
-
             activeClientList.add(newCient);
-
         } finally {
             writeLock.unlock();
         }
