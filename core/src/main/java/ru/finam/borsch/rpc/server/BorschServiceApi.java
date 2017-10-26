@@ -23,7 +23,7 @@ import java.util.function.Consumer;
  */
 public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
 
-    private static final int MAX_REQUEST_SIZE = 200;
+    private static final int MAX_REQUEST_SIZE = 10;
     private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
 
     private final TimeSource timeSource;
@@ -87,7 +87,11 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
                                      StreamObserver<finam.protobuf.borsch.GetSnapshotResponse> responseObserver) {
         for (int i = 0; i < kvList.size(); i += MAX_REQUEST_SIZE) {
             GetSnapshotResponse.Builder responseBuilder = GetSnapshotResponse.newBuilder();
-            for (int j = i; j < kvList.size(); j++) {
+            int to = i + MAX_REQUEST_SIZE;
+            if (kvList.size() < to) {
+                to = kvList.size() - 1;
+            }
+            for (int j = i; j < to; j++) {
                 responseBuilder.addEntity(kvList.get(j));
             }
             responseObserver.onNext(responseBuilder.build());

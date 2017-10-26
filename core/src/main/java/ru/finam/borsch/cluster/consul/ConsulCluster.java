@@ -8,7 +8,6 @@ import com.orbitz.consul.model.ConsulResponse;
 import com.orbitz.consul.model.State;
 import com.orbitz.consul.model.agent.ImmutableCheck;
 import com.orbitz.consul.model.catalog.CatalogService;
-import com.orbitz.consul.model.health.HealthCheck;
 import com.orbitz.consul.model.health.ServiceHealth;
 import com.orbitz.consul.option.QueryOptions;
 import org.slf4j.Logger;
@@ -49,8 +48,6 @@ public class ConsulCluster extends Cluster {
     private final ScheduledThreadPoolExecutor scheduledExecutor;
     private final int grpcPort;
     private final AtomicReference<BigInteger> index = new AtomicReference<>(BigInteger.ZERO);
-    private final HostPortAddress ownAddress;
-
 
 
     private final ConsulResponseCallback<List<ServiceHealth>> healthCallback =
@@ -59,7 +56,7 @@ public class ConsulCluster extends Cluster {
                 @Override
                 public void onComplete(ConsulResponse<List<ServiceHealth>> consulResponse) {
                     healthNotifier(consulResponse.getResponse());
-                    if (index.get().equals(BigInteger.ZERO)){
+                    if (index.get().equals(BigInteger.ZERO)) {
                         synchronizeData();
                     }
                     index.set(consulResponse.getIndex());
@@ -109,7 +106,6 @@ public class ConsulCluster extends Cluster {
         this.borschIdCheck = "borsch_" + serviceHolderId;
         HostPortAddress ownAddress = discoverOwnAddress(consul);
         this.grpcPort = ownAddress.getPort();
-        this.ownAddress = ownAddress;
         this.serverDistributionHolder = new ServerDistributionHolder(ownAddress, new ArrayList<>());
         this.memberListener = new MemberListenerImpl(borschClientManager, serverDistributionHolder);
     }
@@ -119,12 +115,6 @@ public class ConsulCluster extends Cluster {
                 serviceHolderName,
                 QueryOptions.blockMinutes(5, index.get()).build(),
                 healthCallback);
-    }
-
-    private boolean isHaveBorschCheck(List<HealthCheck> checkList) {
-        return checkList.stream()
-                .filter(check -> check.getCheckId().equals(borschIdCheck))
-                .count() > 0;
     }
 
     private HostPortAddress discoverOwnAddress(Consul consul) {
@@ -160,7 +150,7 @@ public class ConsulCluster extends Cluster {
                     int grpcPort = parseTag(serviceHealth.getService().getTags());
                     HostPortAddress inetAddress = new HostPortAddress(host, grpcPort);
                     if (!inetAddressMap.containsKey(inetAddress) &&
-                            !serviceHealth.getService().getId().equals(serviceHolderId)                           ) {
+                            !serviceHealth.getService().getId().equals(serviceHolderId)) {
                         memberListener.onJoin(inetAddress);
                     }
                     inetAddressMap.put(inetAddress, time);

@@ -26,8 +26,8 @@ public abstract class Cluster implements ClusterInfo {
     }
 
     protected void synchronizeData() {
-        LOG.info("synscronizing with {} servers", inetAddressMap.size());
-        borschClientManager.onClusterStart(inetAddressMap.keySet());
+        LOG.info("synchronizing with {} servers", inetAddressMap.size());
+        borschClientManager.onClusterStart();
     }
 
     public abstract Consumer<Boolean> getHealthListener();

@@ -6,10 +6,7 @@ import org.slf4j.LoggerFactory;
 import ru.finam.borsch.HostPortAddress;
 import ru.finam.rocksdb.Store;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 
@@ -25,17 +22,21 @@ public class BorschClientManager {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final Store store;
 
+
     public BorschClientManager(Store store) {
         this.store = store;
     }
 
-    public void onClusterStart(Collection<HostPortAddress> hostPortAddressList) {
-        hostPortAddressList.forEach(this::onAddingNewServer);
-        activeClientList.forEach(
-                client -> {
-                     client.askForSnapshot();
-                }
-        );
+    public void onClusterStart() {
+        askForSnapshotFrom(0);
+    }
+
+    private void askForSnapshotFrom(int clientNumber) {
+        if (clientNumber >= activeClientList.size()) {
+            return;
+        }
+        BorschServiceClient serviceClient = activeClientList.get(clientNumber);
+        serviceClient.askForSnapshot(aVoid -> askForSnapshotFrom(clientNumber + 1));
     }
 
 
@@ -55,7 +56,9 @@ public class BorschClientManager {
         ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
         writeLock.lock();
         try {
-            activeClientList.add(newCient);
+            if (!activeClientList.contains(newServerAddress)) {
+                activeClientList.add(newCient);
+            }
         } finally {
             writeLock.unlock();
         }

@@ -58,7 +58,7 @@ public class BorschServiceClient {
     }
 
     //при перезагрузке
-    void askForSnapshot() {
+    void askForSnapshot(Consumer<Void> onReady) {
         GetSnapshotDbRequest request = GetSnapshotDbRequest.newBuilder()
                 .setUpdateTime(Timestamp.getDefaultInstance())
                 .build();
@@ -77,6 +77,7 @@ public class BorschServiceClient {
             @Override
             public void onCompleted() {
                 LOG.info("Load snapshot from {} ", hostPortAddress);
+                onReady.accept(null);
             }
         });
     }
