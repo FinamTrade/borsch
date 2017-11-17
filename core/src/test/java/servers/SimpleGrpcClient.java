@@ -46,7 +46,7 @@ public class SimpleGrpcClient {
     //при перезагрузке
     public void askForSnapshot() {
         GetSnapshotDbRequest request = GetSnapshotDbRequest.newBuilder().build();
-        serviceStub.getSnapshotDb(request, new StreamObserver<GetSnapshotResponse>() {
+        serviceStub.getFullSnapshotDb(request, new StreamObserver<GetSnapshotResponse>() {
             @Override
             public void onNext(GetSnapshotResponse value) {
 

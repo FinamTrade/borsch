@@ -2,6 +2,8 @@ package ru.finam.borsch.rpc.server;
 
 import com.google.protobuf.ByteString;
 import finam.protobuf.borsch.*;
+import io.grpc.stub.CallStreamObserver;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +25,7 @@ import java.util.function.Consumer;
  */
 public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
 
-    private static final int MAX_REQUEST_SIZE = 10;
+    private static final int MAX_REQUEST_SIZE = 200;
     private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
 
     private final TimeSource timeSource;
@@ -71,32 +73,25 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
     public void getSnapshotFamily(finam.protobuf.borsch.GetSnapshotFamilyRequest request,
                                   io.grpc.stub.StreamObserver<finam.protobuf.borsch.GetSnapshotResponse> responseObserver) {
         List<KVRecord> kvList = store.getColumnCopy(request.getFamilyName());
-        sendDbUpdate(kvList, responseObserver);
+        sendDbUpdate(kvList, (ServerCallStreamObserver<GetSnapshotResponse>) responseObserver);
     }
 
 
-    public void getSnapshotDb(finam.protobuf.borsch.GetSnapshotDbRequest request,
-                              io.grpc.stub.StreamObserver<finam.protobuf.borsch.GetSnapshotResponse> responseObserver) {
+    public void getFullSnapshotDb(finam.protobuf.borsch.GetSnapshotDbRequest request,
+                                  io.grpc.stub.StreamObserver<finam.protobuf.borsch.GetSnapshotResponse> responseObserver) {
         long millisFrom = TimeUnit.SECONDS.toMillis(request.getUpdateTime().getSeconds());
         List<KVRecord> kvList = store.getDbCopy(millisFrom);
         LOG.info("Ask for a snapshot. Having {} records ", kvList.size());
-        sendDbUpdate(kvList, responseObserver);
+        sendDbUpdate(kvList, (ServerCallStreamObserver<GetSnapshotResponse>) responseObserver);
     }
 
     private static void sendDbUpdate(List<KVRecord> kvList,
-                                     StreamObserver<finam.protobuf.borsch.GetSnapshotResponse> responseObserver) {
-        for (int i = 0; i < kvList.size(); i += MAX_REQUEST_SIZE) {
-            GetSnapshotResponse.Builder responseBuilder = GetSnapshotResponse.newBuilder();
-            int to = i + MAX_REQUEST_SIZE;
-            if (kvList.size() < to) {
-                to = kvList.size() - 1;
-            }
-            for (int j = i; j < to; j++) {
-                responseBuilder.addEntity(kvList.get(j));
-            }
-            responseObserver.onNext(responseBuilder.build());
-        }
-        responseObserver.onCompleted();
+                                     ServerCallStreamObserver<GetSnapshotResponse> responseObserver) {
+
+        responseObserver.disableAutoInboundFlowControl();
+        SnapshotSender snapshotSender = new SnapshotSender(kvList, responseObserver);
+        PartSnapshotRunnable partSnapshotRunnable = new PartSnapshotRunnable(snapshotSender);
+        responseObserver.setOnReadyHandler(partSnapshotRunnable);
     }
 
 
@@ -181,4 +176,51 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
         }
     }
 
+    private static class SnapshotSender {
+        private int counter;
+        private final List<KVRecord> kvList;
+        private final CallStreamObserver<GetSnapshotResponse> responseObserver;
+        private final int snapshotSize;
+
+        public SnapshotSender(List<KVRecord> kvList,
+                              ServerCallStreamObserver<GetSnapshotResponse> responseObserver) {
+            this.kvList = kvList;
+            this.responseObserver = responseObserver;
+            this.snapshotSize = kvList.size();
+        }
+
+        public void send() {
+            for (int i = counter; i < snapshotSize; i += MAX_REQUEST_SIZE) {
+                GetSnapshotResponse.Builder responseBuilder = GetSnapshotResponse.newBuilder();
+                int to = i + MAX_REQUEST_SIZE;
+                if (snapshotSize < to) {
+                    to = snapshotSize - 1;
+                }
+                for (int j = i; j < to; j++) {
+                    responseBuilder.addEntity(kvList.get(j));
+                }
+                if (responseObserver.isReady()) {
+                    responseObserver.onNext(responseBuilder.build());
+                    counter = to;
+                } else {
+                    return;
+                }
+            }
+            responseObserver.onCompleted();
+        }
+    }
+
+    private static class PartSnapshotRunnable implements Runnable {
+
+        private final SnapshotSender snapshotSender;
+
+        PartSnapshotRunnable(SnapshotSender snapshotSender) {
+            this.snapshotSender = snapshotSender;
+        }
+
+        @Override
+        public void run() {
+            snapshotSender.send();
+        }
+    }
 }

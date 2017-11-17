@@ -6,7 +6,6 @@ subprojects {
     repositories {
         maven {
             url 'https://artifact.finam.ru/artifactory/cb-maven-repo/'
-            mavenCentral()
         }
     }
 
@@ -17,7 +16,7 @@ subprojects {
 
     dependencies {
         compile "org.slf4j:slf4j-simple:${slf4j}"
-        compile "ru.finam.protobuf:grpc-borsch:${borschVersion}"
+        compile "ru.finam.protobuf:grpc-borsch:1.1.198"
         testCompile "junit:junit:${junit}"
     }
 }
