@@ -72,17 +72,17 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
 
     public void getSnapshotFamily(finam.protobuf.borsch.GetSnapshotFamilyRequest request,
                                   io.grpc.stub.StreamObserver<finam.protobuf.borsch.GetSnapshotResponse> responseObserver) {
-//        List<KVRecord> kvList = store.getColumnCopy(request.getFamilyName());
-//        sendDbUpdate(kvList, (ServerCallStreamObserver<GetSnapshotResponse>) responseObserver);
+        List<KVRecord> kvList = store.getColumnCopy(request.getFamilyName());
+        sendDbUpdate(kvList, (ServerCallStreamObserver<GetSnapshotResponse>) responseObserver);
     }
 
 
     public void getFullSnapshotDb(finam.protobuf.borsch.GetSnapshotDbRequest request,
                                   io.grpc.stub.StreamObserver<finam.protobuf.borsch.GetSnapshotResponse> responseObserver) {
-//        long millisFrom = TimeUnit.SECONDS.toMillis(request.getUpdateTime().getSeconds());
-//        List<KVRecord> kvList = store.getDbCopy(millisFrom);
-//        LOG.info("Ask for a snapshot. Having {} records ", kvList.size());
-//        sendDbUpdate(kvList, (ServerCallStreamObserver<GetSnapshotResponse>) responseObserver);
+        long millisFrom = TimeUnit.SECONDS.toMillis(request.getUpdateTime().getSeconds());
+        List<KVRecord> kvList = store.getDbCopy(millisFrom);
+        LOG.info("Ask for a snapshot. Having {} records ", kvList.size());
+        sendDbUpdate(kvList, (ServerCallStreamObserver<GetSnapshotResponse>) responseObserver);
     }
 
     private static void sendDbUpdate(List<KVRecord> kvList,
