@@ -4,14 +4,12 @@ import com.google.protobuf.Timestamp;
 import finam.protobuf.borsch.*;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.NettyChannelBuilder;
-import io.grpc.stub.ClientCallStreamObserver;
+import io.grpc.stub.CallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.finam.borsch.HostPortAddress;
 import ru.finam.rocksdb.Store;
-
-import javax.annotation.Nullable;
 import java.util.function.Consumer;
 
 /**
@@ -30,7 +28,7 @@ public class BorschServiceClient {
         ManagedChannel managedChannel = NettyChannelBuilder.forAddress(hostPortAddress.getHost(), hostPortAddress.getPort())
                 .usePlaintext(true)
 
-           //     .idleTimeout(1, TimeUnit.MINUTES)
+                //     .idleTimeout(1, TimeUnit.MINUTES)
                 .build();
         serviceStub = BorschServiceGrpc.newStub(managedChannel);
         this.hostPortAddress = hostPortAddress;
@@ -64,42 +62,12 @@ public class BorschServiceClient {
         GetSnapshotDbRequest request = GetSnapshotDbRequest.newBuilder()
                 .setUpdateTime(Timestamp.getDefaultInstance())
                 .build();
-        serviceStub.getFullSnapshotDb(request, new ClientCallStreamObserver<GetSnapshotResponse>() {
-            @Override
-            public void cancel(@Nullable String message, @Nullable Throwable cause) {
-
-            }
-
-            @Override
-            public boolean isReady() {
-                return true;
-            }
-
-            @Override
-            public void setOnReadyHandler(Runnable onReadyHandler) {
-
-            }
-
-            @Override
-            public void disableAutoInboundFlowControl() {
-
-            }
-
-            @Override
-            public void request(int count) {
-
-            }
-
-            @Override
-            public void setMessageCompression(boolean enable) {
-
-            }
+        serviceStub.getFullSnapshotDb(request, new StreamObserver<GetSnapshotResponse>() {
 
             @Override
             public void onNext(GetSnapshotResponse value) {
                 LOG.info("Part of snapshot from {} ", hostPortAddress);
                 store.loadSnapshot(value.getEntityList());
-               this.request(1);
             }
 
             @Override

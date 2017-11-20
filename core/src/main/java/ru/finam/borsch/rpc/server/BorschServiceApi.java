@@ -72,17 +72,17 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
 
     public void getSnapshotFamily(finam.protobuf.borsch.GetSnapshotFamilyRequest request,
                                   io.grpc.stub.StreamObserver<finam.protobuf.borsch.GetSnapshotResponse> responseObserver) {
-        List<KVRecord> kvList = store.getColumnCopy(request.getFamilyName());
-        sendDbUpdate(kvList, (ServerCallStreamObserver<GetSnapshotResponse>) responseObserver);
+//        List<KVRecord> kvList = store.getColumnCopy(request.getFamilyName());
+//        sendDbUpdate(kvList, (ServerCallStreamObserver<GetSnapshotResponse>) responseObserver);
     }
 
 
     public void getFullSnapshotDb(finam.protobuf.borsch.GetSnapshotDbRequest request,
                                   io.grpc.stub.StreamObserver<finam.protobuf.borsch.GetSnapshotResponse> responseObserver) {
-        long millisFrom = TimeUnit.SECONDS.toMillis(request.getUpdateTime().getSeconds());
-        List<KVRecord> kvList = store.getDbCopy(millisFrom);
-        LOG.info("Ask for a snapshot. Having {} records ", kvList.size());
-        sendDbUpdate(kvList, (ServerCallStreamObserver<GetSnapshotResponse>) responseObserver);
+//        long millisFrom = TimeUnit.SECONDS.toMillis(request.getUpdateTime().getSeconds());
+//        List<KVRecord> kvList = store.getDbCopy(millisFrom);
+//        LOG.info("Ask for a snapshot. Having {} records ", kvList.size());
+//        sendDbUpdate(kvList, (ServerCallStreamObserver<GetSnapshotResponse>) responseObserver);
     }
 
     private static void sendDbUpdate(List<KVRecord> kvList,
@@ -113,21 +113,27 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
                 }
                 default:
                     try {
-                        responseObserver.onNext(PutResponse.newBuilder().setResult(true).build());
+                        if (((CallStreamObserver) responseObserver).isReady()) {
+                            responseObserver.onNext(PutResponse.newBuilder().setResult(true).build());
+
+                        }
                     } catch (Throwable e) {
                         LOG.error(e.getMessage(), e);
                     }
                     return;
             }
-            Consumer<Boolean> collectConsumer = new CollectConsumer(timeSource, responseObserver, quorum);
+            Consumer<Boolean> collectConsumer = new CollectConsumer(timeSource, (CallStreamObserver<PutResponse>) responseObserver, quorum);
             borschClientManager.putToNeibours(request, collectConsumer);
         } else {
             store.put(request.getKv());
             try {
-                responseObserver.onNext(PutResponse
-                        .newBuilder()
-                        .setResult(true)
-                        .build());
+                if (((CallStreamObserver) responseObserver).isReady()) {
+                    responseObserver.onNext(PutResponse
+                            .newBuilder()
+                            .setResult(true)
+                            .build());
+                }
+
             } catch (Throwable e) {
                 e.printStackTrace();
             }
@@ -141,13 +147,13 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
 
     private static class CollectConsumer implements Consumer<Boolean> {
         private final int succeedResp;
-        private final StreamObserver<PutResponse> responseObserver;
+        private final CallStreamObserver<PutResponse> responseObserver;
 
         private boolean working = true;
         private int success;
 
         CollectConsumer(TimeSource timeSource,
-                        StreamObserver<PutResponse> responseObserver,
+                        CallStreamObserver<PutResponse> responseObserver,
                         int succeedResp) {
             this.succeedResp = succeedResp;
             this.responseObserver = responseObserver;
@@ -156,7 +162,9 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
                 if (succeedResp >= success) {
                     return;
                 }
-                responseObserver.onNext(PutResponse.newBuilder().setResult(false).build());
+                if (responseObserver.isReady()) {
+                    responseObserver.onNext(PutResponse.newBuilder().setResult(false).build());
+                }
                 working = false;
                 LOG.info("Cancelled by timeout success operations {} target {} ", success, succeedResp);
             });
@@ -171,7 +179,9 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
                 success++;
             }
             if (succeedResp >= success) {
-                responseObserver.onNext(PutResponse.newBuilder().setResult(true).build());
+                if (responseObserver.isReady()) {
+                    responseObserver.onNext(PutResponse.newBuilder().setResult(true).build());
+                }
             }
         }
     }
@@ -220,6 +230,7 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
 
         @Override
         public void run() {
+            System.out.println("is ready");
             snapshotSender.send();
         }
     }
