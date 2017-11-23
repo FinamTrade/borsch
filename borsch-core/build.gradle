@@ -1,0 +1,9 @@
+dependencies {
+    compile project(':borsch-rocksdb')
+    compile "com.orbitz.consul:consul-client:${consul}"
+    compile "org.slf4j:slf4j-simple:${slf4j}"
+    compile "io.grpc:grpc-all:${grpcVersion}"
+    compile "com.google.guava:guava:${guava}"
+    compile "io.projectreactor:reactor-core:${projectReactor}"
+    compile "io.grpc:grpc-services:${grpcVersion}"
+}

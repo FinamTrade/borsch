@@ -1,5 +1,5 @@
-rootProject.name = 'borsch'
-include 'rocksdb'
-include 'core'
+rootProject.name = projectName
+include 'borsch-rocksdb'
+include 'borsch-core'
 
 

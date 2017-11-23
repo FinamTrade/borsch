@@ -1,15 +1,29 @@
-group 'borsch'
-version '1.0-SNAPSHOT'
+group = projectGroup
+version = projectVersion
 
+
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "com.github.jengelman.gradle.plugins:shadow:1.2.4"
+    }
+}
+
+apply plugin: "com.github.johnrengelman.shadow"
 
 subprojects {
     repositories {
         maven {
-            url 'https://artifact.finam.ru/artifactory/cb-maven-repo/'
+            url repositoryServer
         }
     }
 
-    apply plugin: 'java'
+    apply plugin: "java"
+    apply plugin: "maven"
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
@@ -19,6 +33,36 @@ subprojects {
         compile "ru.finam.protobuf:grpc-borsch:1.1.198"
         testCompile "junit:junit:${junit}"
     }
-}
 
+    uploadArchives {
+
+        repositories {
+            mavenDeployer {
+                repository(url: version.endsWith('-SNAPSHOT') ?
+                        deployer_url_snapshot :
+                        deployer_url_release)
+            }
+        }
+    }
+
+    task srcs(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from project.sourceSets.main.allSource
+    }
+
+    jar {
+        duplicatesStrategy 'exclude'
+        manifest {
+            attributes('Implementation-Title': "${projectGroup}",
+                    'Implementation-Version': "${projectVersion}",
+                    'Implementation-Vendor': "Investment holding \"FINAM\" CJSC",
+                    'Build-Date': new java.text.SimpleDateFormat("HH:mm:ss yyyy/MM/dd").format(new Date()),
+            )
+        }
+        dependsOn classes
+        from project.sourceSets.main.allSource
+        includes = ['**/*']
+    }
+
+}
 
