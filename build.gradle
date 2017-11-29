@@ -1,7 +1,3 @@
-group = projectGroup
-version = projectVersion
-
-
 buildscript {
     repositories {
         maven {
@@ -16,6 +12,9 @@ buildscript {
 apply plugin: "com.github.johnrengelman.shadow"
 
 subprojects {
+    group = projectGroup
+    version = projectVersion
+
     repositories {
         maven {
             url repositoryServer
@@ -53,8 +52,8 @@ subprojects {
     jar {
         duplicatesStrategy 'exclude'
         manifest {
-            attributes('Implementation-Title': "${projectGroup}",
-                    'Implementation-Version': "${projectVersion}",
+            attributes('Implementation-Title': "$name",
+                    'Implementation-Version': version,
                     'Implementation-Vendor': "Investment holding \"FINAM\" CJSC",
                     'Build-Date': new java.text.SimpleDateFormat("HH:mm:ss yyyy/MM/dd").format(new Date()),
             )

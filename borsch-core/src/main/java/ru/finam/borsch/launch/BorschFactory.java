@@ -1,5 +1,6 @@
 package ru.finam.borsch.launch;
 
+import com.google.protobuf.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.finam.borsch.BorschSettings;
@@ -10,8 +11,8 @@ import ru.finam.borsch.rpc.server.BorschGrpcServer;
 import ru.finam.borsch.rpc.server.BorschServiceApi;
 import ru.finam.rocksdb.Store;
 import ru.finam.rocksdb.RocksDbStore;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 /**
  * Create borsch instances
@@ -29,12 +30,13 @@ public class BorschFactory {
             new ScheduledThreadPoolExecutor(Math.max(8,
                     Runtime.getRuntime().availableProcessors() * 2));
 
-    private static Cluster cluster;
-    private static BorschGrpcServer grpcServer;
+    private final Cluster cluster;
+    private final BorschGrpcServer grpcServer;
 
-    private BorschFactory(BorschSettings borschSettings,
-                          Runnable stopNotYoutCalculation,
-                          Runnable startYourCalculation) {
+
+    public BorschFactory(Runnable stopNotYoutCalculation,
+                         Runnable startYourCalculation,
+                         BorschSettings borschSettings) {
         Store store = new RocksDbStore(borschSettings.getPathToDb());
         BorschClientManager borschClientManager = new BorschClientManager(store);
         cluster = new ConsulCluster(borschClientManager, borschSettings,
@@ -47,10 +49,12 @@ public class BorschFactory {
     }
 
 
-    public static void startBorsch(Runnable stopNotYoutCalculation,
-                                   Runnable startYourCalculation,
-                                   BorschSettings borschSettings) {
-        new BorschFactory(borschSettings, stopNotYoutCalculation, startYourCalculation);
+    public boolean isMyEntity(ByteString shardKey) {
+        return cluster.isMyData(shardKey);
+    }
+
+
+    public void startBorsch() {
         grpcServer.start();
     }
 }

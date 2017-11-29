@@ -10,8 +10,6 @@ import org.slf4j.LoggerFactory;
 import ru.finam.borsch.BorschSettings;
 import ru.finam.borsch.HostPortAddress;
 import ru.finam.borsch.launch.BorschFactory;
-import ru.finam.borsch.partitioner.MemberListenerImpl;
-
 import java.util.List;
 
 public abstract class AbstractBorschEater {
@@ -61,13 +59,14 @@ public abstract class AbstractBorschEater {
     }
 
     void launchBorsch() {
-        BorschFactory.startBorsch((Runnable) () -> {
-                   LOG.info("Stop data");
-                },
-                (Runnable) () -> {
+        BorschFactory borschFactory = new BorschFactory(() -> {
+            LOG.info("Stop data");
+        },
+                () -> {
                     LOG.info("Start data");
                 },
                 borschSettings);
+        borschFactory.startBorsch();
         new BorschDataThread(grpcClient, shard, getServiceId());
     }
 
