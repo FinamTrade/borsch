@@ -15,7 +15,7 @@ import java.util.TreeMap;
 class KetamaHashingRing {
 
     private static final Logger LOG = LoggerFactory.getLogger(KetamaHashingRing.class);
-    private static final int NUM_OF_SEGMENTS = 2;
+    private static final int NUM_OF_SEGMENTS = 1024;
     private static final HashFunction MD5_HASH = Hashing.md5();
 
     private final TreeMap<Long, HostPortAddress> buckets;
@@ -24,8 +24,7 @@ class KetamaHashingRing {
         buckets = new TreeMap<>();
         int numOfServers = servers.size();
         for (HostPortAddress hostPortAddress : servers) {
-            int thisWeight = 1;
-            double factor = Math.floor(((double) (NUM_OF_SEGMENTS * numOfServers * thisWeight)) / (double) numOfServers);
+            double factor = Math.floor(((double) (NUM_OF_SEGMENTS * numOfServers)) / (double) numOfServers);
             for (long j = 0; j < factor; j++) {
                 byte[] d = MD5_HASH.hashString(hostPortAddress + "-" + j, Charset.defaultCharset()).asBytes();
                 for (int h = 0; h < 4; h++) {
