@@ -49,7 +49,7 @@ public class BorschFactory {
     }
 
 
-    public boolean isMyEntity(ByteString shardKey) {
+    public boolean isMyEntity(String shardKey) {
         return cluster.isMyData(shardKey);
     }
 

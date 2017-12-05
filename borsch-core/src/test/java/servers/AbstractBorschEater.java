@@ -41,7 +41,8 @@ public abstract class AbstractBorschEater {
         this.borschSettings = new BorschSettings(consulHost,
                 consulPort, getServiceId(),
                 SERVICE_NAME,
-                "/var/lib/borsch/db/" + getServiceId());
+                "/home/akhaymovich/temp/txalerts/txalerts/db"
+                );
         this.grpcClient = new SimpleGrpcClient(grpcBorschAddress);
         this.shard = shard;
     }

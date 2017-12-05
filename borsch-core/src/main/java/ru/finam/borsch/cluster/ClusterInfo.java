@@ -1,6 +1,5 @@
 package ru.finam.borsch.cluster;
 
-import com.google.protobuf.ByteString;
 
 /**
  * Information about cluster for other users
@@ -10,7 +9,7 @@ public interface ClusterInfo {
 
    int numOfMembers();
    int grpcPort();
-   boolean isMyData(ByteString shardKey);
+   boolean isMyData(String shardKey);
 
    default int quorum(){
       int size = numOfMembers();

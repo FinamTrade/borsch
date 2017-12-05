@@ -1,7 +1,5 @@
 package ru.finam.borsch.partitioner;
 
-
-import com.google.protobuf.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.finam.borsch.HostPortAddress;
@@ -54,8 +52,8 @@ public class ServerDistributionHolder {
         }
     }
 
-    public boolean isMyData(ByteString accountHash) {
-        HostPortAddress serverHolder = hashingRing.getServer(new String(accountHash.toByteArray()));
+    public boolean isMyData(String accountHash) {
+        HostPortAddress serverHolder = hashingRing.getServer(accountHash);
         return serverHolder.equals(ownAddress);
     }
 

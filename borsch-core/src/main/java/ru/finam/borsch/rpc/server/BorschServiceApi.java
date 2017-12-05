@@ -99,7 +99,7 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
                     io.grpc.stub.StreamObserver<finam.protobuf.borsch.PutResponse> responseObserver) {
         ByteString shardPart = request.getKv().getKey().getShardPart();
 
-        if (cluster.isMyData(shardPart)) {
+        if (cluster.isMyData(new String(shardPart.toByteArray()))) {
             System.out.println("This is my data " + new String(shardPart.toByteArray()));
             int quorum;
             store.put(request.getKv());
@@ -120,6 +120,10 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
                         LOG.error(e.getMessage(), e);
                     }
                     return;
+            }
+            if (quorum == 0){
+                responseObserver.onNext(PutResponse.newBuilder().setResult(true).build());
+                responseObserver.onCompleted();
             }
             Consumer<Boolean> collectConsumer = new CollectConsumer(timeSource, responseObserver, quorum);
             borschClientManager.putToNeibours(request, collectConsumer);

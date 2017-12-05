@@ -32,6 +32,7 @@ public class RocksDbStore implements Store {
         RocksDB.loadLibrary();
     }
 
+
     public RocksDbStore(String location) {
         List<ColumnFamilyHandle> columns = new ArrayList<>();
         DBOptions dbOptions = createDbOptions();
@@ -52,6 +53,8 @@ public class RocksDbStore implements Store {
             db = RocksDB.open(dbOptions, location,
                     familyList,
                     columns);
+            LOG.info("Load data from rocks db {}", location);
+
         } catch (RocksDBException e) {
             throw new RuntimeException("Invalid rocks db state", e);
         }
@@ -126,6 +129,11 @@ public class RocksDbStore implements Store {
         Snapshot snapshot = db.getSnapshot();
         ColumnFamilyHandle columnFamilyHandle = getHandle(columnName);
         return readFamilyData(columnFamilyHandle, snapshot, Timestamp.getDefaultInstance());
+    }
+
+    @Override
+    public double getRecordSize() {
+        return 0;
     }
 
     private List<KVRecord> readFamilyData(ColumnFamilyHandle columnFamilyHandle,

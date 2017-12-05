@@ -20,35 +20,35 @@ public class BorschDataThread {
                             String name) {
 
         Thread t = new Thread(() -> {
-            int counter = Integer.MAX_VALUE;
-            while (true) {
-
-                ByteString bytes =
-                        ByteString.copyFrom(String.valueOf(counter).getBytes());
-                counter--;
-                Key key = Key.newBuilder()
-                        .setEntityPart(fromString(String.valueOf(counter)))
-                        .setShardPart(fromString(String.valueOf(shard)))
-                        .build();
-
-
-                KV kv = KV.newBuilder()
-                        .setColumnFamily("test")
-                        .setValue(bytes)
-                        .setKey(key)
-                        .build();
-
-                PutRequest putRequest = PutRequest.newBuilder()
-                        .setMode(WriteMode.ALL)
-                        .setKv(kv)
-                        .build();
-                dataProducer.put(putRequest);
-                try {
-                    Thread.sleep(100L);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+//            int counter = Integer.MAX_VALUE;
+//            while (true) {
+//
+//                ByteString bytes =
+//                        ByteString.copyFrom(String.valueOf(counter).getBytes());
+//                counter--;
+//                Key key = Key.newBuilder()
+//                        .setEntityPart(fromString(String.valueOf(counter)))
+//                        .setShardPart(fromString(String.valueOf(shard)))
+//                        .build();
+//
+//
+//                KV kv = KV.newBuilder()
+//                        .setColumnFamily("test")
+//                        .setValue(bytes)
+//                        .setKey(key)
+//                        .build();
+//
+//                PutRequest putRequest = PutRequest.newBuilder()
+//                        .setMode(WriteMode.ALL)
+//                        .setKv(kv)
+//                        .build();
+//                dataProducer.put(putRequest);
+//                try {
+//                    Thread.sleep(100L);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
         });
         t.start();
     }

@@ -1,7 +1,6 @@
 package ru.finam.borsch.cluster.consul;
 
 import com.google.common.net.HostAndPort;
-import com.google.protobuf.ByteString;
 import com.orbitz.consul.*;
 import com.orbitz.consul.async.ConsulResponseCallback;
 import com.orbitz.consul.model.ConsulResponse;
@@ -49,6 +48,9 @@ public class ConsulCluster extends Cluster {
     private final int grpcPort;
     private final AtomicReference<BigInteger> index = new AtomicReference<>(BigInteger.ZERO);
 
+    private volatile boolean firstCheck = true;
+    private final Runnable startYourCalculation;
+
 
     private final ConsulResponseCallback<List<ServiceHealth>> healthCallback =
             new ConsulResponseCallback<List<ServiceHealth>>() {
@@ -57,6 +59,12 @@ public class ConsulCluster extends Cluster {
                 public void onComplete(ConsulResponse<List<ServiceHealth>> consulResponse) {
                     healthNotifier(consulResponse.getResponse());
                     index.set(consulResponse.getIndex());
+                    if (firstCheck){
+                        firstCheck = false;
+                        if (numOfMembers() == 1){
+                            startYourCalculation.run();
+                        }
+                    }
                     loadHealthyInstances(index);
                 }
 
@@ -109,6 +117,7 @@ public class ConsulCluster extends Cluster {
                 borschClientManager,
                 Arrays.asList(stopNotYourCalculation, () -> synchronizeData(), startYourCalculation),
                 serverDistributionHolder);
+        this.startYourCalculation = startYourCalculation;
     }
 
     private void loadHealthyInstances(AtomicReference<BigInteger> index) {
@@ -184,7 +193,7 @@ public class ConsulCluster extends Cluster {
     }
 
     @Override
-    public boolean isMyData(ByteString accountHash) {
+    public boolean isMyData(String accountHash) {
         System.out.println("This is " + grpcPort + " cluster");
         return serverDistributionHolder.isMyData(accountHash);
     }

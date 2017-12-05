@@ -22,6 +22,8 @@ public interface Store {
 
     List<KVRecord> getColumnCopy(String columnName);
 
+    double getRecordSize();
+
     void loadSnapshot(List<KVRecord> kvRecordList);
 
 
