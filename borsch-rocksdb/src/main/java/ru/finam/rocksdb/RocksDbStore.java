@@ -10,7 +10,6 @@ import org.slf4j.*;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
-import java.sql.Time;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +41,8 @@ public class RocksDbStore implements Store {
             familyList = families.stream()
                     .map(familyName -> new ColumnFamilyDescriptor(familyName))
                     .collect(Collectors.toList());
-            families.stream().forEach(bytes -> System.out.println(new String(bytes)));
+            families.stream().forEach(bytes -> LOG.debug(new String(bytes)));
+
         } catch (RocksDBException e) {
             LOG.error(e.getMessage(), e);
             throw new RuntimeException("Coudn't load db from " + location);

@@ -100,7 +100,6 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
         ByteString shardPart = request.getKv().getKey().getShardPart();
 
         if (cluster.isMyData(new String(shardPart.toByteArray()))) {
-            System.out.println("This is my data " + new String(shardPart.toByteArray()));
             int quorum;
             store.put(request.getKv());
             switch (request.getMode()) {
@@ -113,7 +112,6 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
                     break;
                 }
                 default:
-                    System.out.print(request.getMode());
                     try {
                         responseObserver.onNext(PutResponse.newBuilder().setResult(true).build());
                     } catch (Throwable e) {
@@ -128,8 +126,6 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
             Consumer<Boolean> collectConsumer = new CollectConsumer(timeSource, responseObserver, quorum);
             borschClientManager.putToNeibours(request, collectConsumer);
         } else {
-            System.out.println("This is not my data " + new String(shardPart.toByteArray()) + "   "
-                    + new String(request.getKv().getValue().toByteArray()));
             store.put(request.getKv());
             try {
                 responseObserver.onNext(PutResponse
@@ -176,7 +172,6 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
 
         @Override
         public void accept(Boolean result) {
-            System.out.println(result);
             if (!working) {
                 return;
             }

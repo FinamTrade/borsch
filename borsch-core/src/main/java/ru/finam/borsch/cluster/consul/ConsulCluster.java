@@ -194,7 +194,6 @@ public class ConsulCluster extends Cluster {
 
     @Override
     public boolean isMyData(String accountHash) {
-        System.out.println("This is " + grpcPort + " cluster");
         return serverDistributionHolder.isMyData(accountHash);
     }
 

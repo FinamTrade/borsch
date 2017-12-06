@@ -2,6 +2,7 @@ package ru.finam.borsch.partitioner;
 
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import net.openhft.hashing.LongHashFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.finam.borsch.HostPortAddress;
@@ -62,5 +63,10 @@ class KetamaHashingRing {
                 | ((long) (bKey[2] & 0xFF) << 16)
                 | ((long) (bKey[1] & 0xFF) << 8) | (long) (bKey[0] & 0xFF);
         return res;
+    }
+
+    private static void xxHashRing(){
+        LongHashFunction.xx();
+
     }
 }

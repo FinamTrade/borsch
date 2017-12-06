@@ -6,4 +6,7 @@ dependencies {
     compile "com.google.guava:guava:${guava}"
     compile "io.projectreactor:reactor-core:${projectReactor}"
     compile "io.grpc:grpc-services:${grpcVersion}"
+    compile "net.openhft:zero-allocation-hashing:0.8"
+
+
 }
