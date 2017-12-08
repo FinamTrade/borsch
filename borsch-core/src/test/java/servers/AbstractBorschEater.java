@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import ru.finam.borsch.BorschSettings;
 import ru.finam.borsch.HostPortAddress;
 import ru.finam.borsch.launch.BorschFactory;
+
 import java.util.List;
 
 public abstract class AbstractBorschEater {
@@ -41,8 +42,9 @@ public abstract class AbstractBorschEater {
         this.borschSettings = new BorschSettings(consulHost,
                 consulPort, getServiceId(),
                 SERVICE_NAME,
-                "/home/akhaymovich/temp/txalerts/txalerts/db"
-                );
+                "/home/akhaymovich/temp/txalerts/txalerts/db",
+                "/home/akhaymovich/temp/txalerts/"
+        );
         this.grpcClient = new SimpleGrpcClient(grpcBorschAddress);
         this.shard = shard;
     }

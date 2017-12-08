@@ -33,6 +33,7 @@ public class RocksDbStore implements Store {
 
 
     public RocksDbStore(String location) {
+        LOG.info("");
         List<ColumnFamilyHandle> columns = new ArrayList<>();
         DBOptions dbOptions = createDbOptions();
         List<ColumnFamilyDescriptor> familyList;
@@ -41,6 +42,7 @@ public class RocksDbStore implements Store {
             familyList = families.stream()
                     .map(familyName -> new ColumnFamilyDescriptor(familyName))
                     .collect(Collectors.toList());
+            familyList.add(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY));
             families.stream().forEach(bytes -> LOG.debug(new String(bytes)));
 
         } catch (RocksDBException e) {

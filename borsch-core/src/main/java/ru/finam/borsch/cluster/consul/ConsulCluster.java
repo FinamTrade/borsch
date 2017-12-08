@@ -99,7 +99,7 @@ public class ConsulCluster extends Cluster {
                          Runnable stopNotYourCalculation,
                          Runnable startYourCalculation,
                          ScheduledThreadPoolExecutor scheduledExecutor) {
-        super(borschClientManager, scheduledExecutor, borschSettings.getServiceHolderId());
+        super(borschClientManager, scheduledExecutor, borschSettings);
         this.serviceHolderName = borschSettings.getServiceHolderName();
         Consul consul = Consul.builder()
                 .withHostAndPort(HostAndPort.fromParts(borschSettings.getConsulHost(),

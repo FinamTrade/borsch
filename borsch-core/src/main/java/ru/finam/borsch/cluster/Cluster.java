@@ -4,6 +4,7 @@ package ru.finam.borsch.cluster;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.finam.borsch.BorschSettings;
 import ru.finam.borsch.HostPortAddress;
 import ru.finam.borsch.rpc.client.BorschClientManager;
 
@@ -32,10 +33,11 @@ public abstract class Cluster implements ClusterInfo {
 
     public Cluster(BorschClientManager borschClientManager,
                    ScheduledThreadPoolExecutor scheduledExecutor,
-                   String serviceHolderId) {
+                   BorschSettings borschSettings) {
         this.borschClientManager = borschClientManager;
         this.scheduledExecutor = scheduledExecutor;
-        this.timeFileName = serviceHolderId + "startTime.borsch";;
+        this.timeFileName = borschSettings.getPathToTimeFile() + "/"
+                + borschSettings.getServiceHolderId();
     }
 
     protected void synchronizeData() {
@@ -56,7 +58,6 @@ public abstract class Cluster implements ClusterInfo {
             Files.write(newTimeBytes, f);
         } catch (IOException e) {
             LOG.error(e.getMessage(), e);
-            throw new RuntimeException(e);
         }
     }
 
@@ -73,7 +74,7 @@ public abstract class Cluster implements ClusterInfo {
             return Long.parseLong(fileContent.get(0)) - TimeUnit.MINUTES.toMillis(1);
         } catch (Exception e) {
             LOG.error(e.getMessage(), e);
-            throw new RuntimeException(e);
+            return 0;
         }
     }
 }

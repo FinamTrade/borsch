@@ -10,17 +10,20 @@ public class BorschSettings {
     private final String serviceHolderId;
     private final String serviceHolderName;
     private final String pathToDb;
+    private final String pathToTimeFile;
 
     public BorschSettings(String consulHost,
                           int consulPort,
                           String serviceHolderId,
                           String serviceHolderName,
-                          String pathToDb) {
+                          String pathToDb,
+                          String pathToTimeFile) {
         this.consulHost = consulHost;
         this.consulPort = consulPort;
         this.serviceHolderId = serviceHolderId;
         this.serviceHolderName = serviceHolderName;
         this.pathToDb = pathToDb;
+        this.pathToTimeFile = pathToTimeFile;
     }
 
     public String getConsulHost() {
@@ -41,5 +44,9 @@ public class BorschSettings {
 
     public String getPathToDb() {
         return pathToDb;
+    }
+
+    public String getPathToTimeFile() {
+        return pathToTimeFile;
     }
 }

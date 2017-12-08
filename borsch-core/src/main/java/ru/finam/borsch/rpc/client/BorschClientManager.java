@@ -28,6 +28,7 @@ public class BorschClientManager {
     }
 
     public void onClusterStart(long sinceMillis) {
+        LOG.info("Acsking for updates since ", new Date(sinceMillis));
         askForSnapshotFrom(0, sinceMillis);
     }
 
