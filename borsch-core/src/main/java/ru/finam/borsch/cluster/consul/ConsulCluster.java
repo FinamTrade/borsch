@@ -112,7 +112,7 @@ public class ConsulCluster extends Cluster {
         this.borschIdCheck = "borsch_" + serviceHolderId;
         HostPortAddress ownAddress = discoverOwnAddress(consul);
         this.grpcPort = ownAddress.getPort();
-        this.serverDistributionHolder = new ServerDistributionHolder(ownAddress, new ArrayList<>());
+        this.serverDistributionHolder = new ServerDistributionHolder(ownAddress, new HashSet<>());
         this.memberListener = new MemberListenerImpl(
                 borschClientManager,
                 Arrays.asList(stopNotYourCalculation, () -> synchronizeData(), startYourCalculation),
@@ -134,6 +134,7 @@ public class ConsulCluster extends Cluster {
                 catalogService.getServiceId().equals(serviceHolderId)
         ).findAny().get();
         int port = parseTag(holderService.getServiceTags());
+        LOG.info("My own address is host {} port {}", holderService.getAddress(), port);
         return new HostPortAddress(holderService.getAddress(), port);
     }
 

@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.finam.borsch.HostPortAddress;
 import ru.finam.rocksdb.Store;
+
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -39,7 +40,7 @@ public class BorschServiceClient {
 
 
     void put(PutRequest putRequest, Consumer<Boolean> resultConsumer) {
-        boolean isWait = serviceStub.getCallOptions().isWaitForReady();
+
         serviceStub.put(putRequest, new StreamObserver<PutResponse>() {
             @Override
             public void onNext(PutResponse value) {
@@ -48,7 +49,7 @@ public class BorschServiceClient {
 
             @Override
             public void onError(Throwable t) {
-                LOG.error(t.getMessage(), t);
+                LOG.debug(t.getMessage(), t);
             }
 
 

@@ -74,7 +74,9 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
 
     public void getSnapshotFamily(finam.protobuf.borsch.GetSnapshotFamilyRequest request,
                                   io.grpc.stub.StreamObserver<finam.protobuf.borsch.GetSnapshotResponse> responseObserver) {
+        LOG.info("Asked for snapshot family {}", request.getFamilyName());
         List<KVRecord> kvList = store.getColumnCopy(request.getFamilyName());
+        LOG.info("Having records {}", kvList.size());
         sendDbUpdate(kvList, (ServerCallStreamObserver<GetSnapshotResponse>) responseObserver);
     }
 
@@ -119,7 +121,7 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
                     }
                     return;
             }
-            if (quorum == 0){
+            if (quorum == 0) {
                 responseObserver.onNext(PutResponse.newBuilder().setResult(true).build());
                 responseObserver.onCompleted();
             }

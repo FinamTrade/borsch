@@ -62,19 +62,20 @@ public abstract class Cluster implements ClusterInfo {
     }
 
     private long getLastWorkTime() {
-        File f = new File(timeFileName);
-        if (!f.exists()) {
-            return 0;
-        }
-        try {
-            List<String> fileContent = Files.readLines(f, Charset.defaultCharset());
-            if (fileContent.size() > 1) {
-                throw new RuntimeException("Invalid save time");
-            }
-            return Long.parseLong(fileContent.get(0)) - TimeUnit.MINUTES.toMillis(1);
-        } catch (Exception e) {
-            LOG.error(e.getMessage(), e);
-            return 0;
-        }
+        return 0;
+//        File f = new File(timeFileName);
+//        if (!f.exists()) {
+//            return 0;
+//        }
+//        try {
+//            List<String> fileContent = Files.readLines(f, Charset.defaultCharset());
+//            if (fileContent.size() > 1) {
+//                throw new RuntimeException("Invalid save time");
+//            }
+//            return Long.parseLong(fileContent.get(0)) - TimeUnit.MINUTES.toMillis(1);
+//        } catch (Exception e) {
+//            LOG.error(e.getMessage(), e);
+//            return 0;
+//        }
     }
 }

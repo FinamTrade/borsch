@@ -4,12 +4,18 @@ package ru.finam.borsch;
 import com.google.common.hash.Hashing;
 
 import java.nio.charset.Charset;
+import java.util.Comparator;
 
 /**
  * For grpc host - port
  * Created by akhaymovich on 06.09.17.
  */
 public class HostPortAddress implements Comparable<HostPortAddress> {
+
+    private static final Comparator<HostPortAddress> HOSTS_COMPARATOR =
+            Comparator
+                    .comparing(HostPortAddress::getHost)
+                    .thenComparing(HostPortAddress::getPort);
 
     private final String host;
     private final int port;
@@ -49,10 +55,6 @@ public class HostPortAddress implements Comparable<HostPortAddress> {
 
     @Override
     public int compareTo(HostPortAddress address) {
-        if (host.equals(address.getHost())) {
-            return Integer.compare(port, address.getPort());
-        } else {
-            return host.compareTo(address.getHost());
-        }
+        return HOSTS_COMPARATOR.compare(this, address);
     }
 }

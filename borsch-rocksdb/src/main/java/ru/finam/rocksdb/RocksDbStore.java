@@ -10,6 +10,7 @@ import org.slf4j.*;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +34,6 @@ public class RocksDbStore implements Store {
 
 
     public RocksDbStore(String location) {
-        LOG.info("");
         List<ColumnFamilyHandle> columns = new ArrayList<>();
         DBOptions dbOptions = createDbOptions();
         List<ColumnFamilyDescriptor> familyList;
@@ -43,7 +43,7 @@ public class RocksDbStore implements Store {
                     .map(familyName -> new ColumnFamilyDescriptor(familyName))
                     .collect(Collectors.toList());
             familyList.add(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY));
-            families.stream().forEach(bytes -> LOG.debug(new String(bytes)));
+            families.stream().forEach(bytes -> System.out.println((new String(bytes))));
 
         } catch (RocksDBException e) {
             LOG.error(e.getMessage(), e);
@@ -81,6 +81,7 @@ public class RocksDbStore implements Store {
     public boolean put(KV kv) {
         ColumnFamilyHandle columnFamilyHandle = getHandle(kv.getColumnFamily());
         if (columnFamilyHandle == null) {
+            LOG.error("No column family name!");
             return false;
         }
         KVRecord kvRecord = createRecord(kv);
@@ -169,7 +170,7 @@ public class RocksDbStore implements Store {
             KV kv = kvRecord.getKv();
             KVRecord prev = getRecord(kv.getColumnFamily(), kv.getKey().toByteArray());
             if (prev == null || prev.getUpdateTime().getSeconds()
-                    <= kvRecord.getUpdateTime().getSeconds()) {
+                    < kvRecord.getUpdateTime().getSeconds()) {
                 put(kv);
             }
         }
@@ -217,11 +218,12 @@ public class RocksDbStore implements Store {
                 .setCreateMissingColumnFamilies(true);
     }
 
+    //Compute Timestamp from Java `System.currentTimeMillis()`.
+    //https://developers.google.com/protocol-buffers/docs/reference/java/com/google/protobuf/Timestamp
     private static KVRecord createRecord(KV kv) {
-        long currentSeconds = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
-        Timestamp timestamp = Timestamp.newBuilder()
-                .setSeconds(currentSeconds)
-                .build();
+        long millis = System.currentTimeMillis();
+        Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
+                .setNanos((int) ((millis % 1000) * 1000000)).build();
         return KVRecord.newBuilder().setKv(kv).setUpdateTime(timestamp).build();
     }
 }
