@@ -3,7 +3,6 @@ package ru.finam.borsch.partitioner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.finam.borsch.HostPortAddress;
-import ru.finam.borsch.rpc.server.BorschServiceApi;
 
 import java.util.*;
 
@@ -19,7 +18,7 @@ public class ServerDistributionHolder {
     private final HostPortAddress ownAddress;
 
     private SortedSet<HostPortAddress> addressSet = new TreeSet<>();
-    private KetamaHashingRing hashingRing;
+    private HashingRing hashingRing;
     private Object addressLock = new Object();
 
     public ServerDistributionHolder(HostPortAddress ownAddress,
@@ -27,7 +26,7 @@ public class ServerDistributionHolder {
         addressSet.add(ownAddress);
         addressSet.addAll(addressList);
         this.ownAddress = ownAddress;
-        this.hashingRing = new KetamaHashingRing(addressSet);
+        this.hashingRing = new HashingRing(addressSet);
         LOG.info("Hash ring initialized. Num of servers : {}   {}", addressSet.size(), addressSet);
     }
 
@@ -38,7 +37,7 @@ public class ServerDistributionHolder {
             LOG.info("Address set {} ", addressSet.toString());
             if (!addressSet.contains(hostPortAddress)) {
                 addressSet.add(hostPortAddress);
-                hashingRing = new KetamaHashingRing(addressSet);
+                hashingRing = new HashingRing(addressSet);
             }
         }
     }
@@ -50,7 +49,7 @@ public class ServerDistributionHolder {
         }
         synchronized (addressLock) {
             addressSet.remove(hostPortAddress);
-            hashingRing = new KetamaHashingRing(addressSet);
+            hashingRing = new HashingRing(addressSet);
         }
     }
 

@@ -1,27 +1,23 @@
 package ru.finam.borsch.partitioner;
 
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
 import net.openhft.hashing.LongHashFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.finam.borsch.HostPortAddress;
-
-import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeMap;
 
 
-class KetamaHashingRing {
+class HashingRing {
 
-    private static final Logger LOG = LoggerFactory.getLogger(KetamaHashingRing.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HashingRing.class);
     private static final int MIN_RING_SIZE = 1024;
 
     private final TreeMap<Long, HostPortAddress> buckets;
     private final Object lock = new Object();
 
-    KetamaHashingRing(SortedSet<HostPortAddress> servers) {
+    HashingRing(SortedSet<HostPortAddress> servers) {
         LOG.info("Counting ring for number of servers {}", servers.size());
         synchronized (lock) {
             buckets = new TreeMap<>();
@@ -36,23 +32,6 @@ class KetamaHashingRing {
         }
         LOG.info("Num of buckets {}", buckets.size());
     }
-
-//    KetamaHashingRing(SortedSet<HostPortAddress> servers) {
-//        buckets = new TreeMap<>();
-//        int numOfServers = servers.size();
-//        int hashPerHost = getHashesPerHost(numOfServers);
-//        for (HostPortAddress hostPortAddress : servers) {
-//            String stringForHash = hostPortAddress.getHost() + hostPortAddress.getPort();
-//            for (long j = 0; j < hashPerHost; j++) {
-//                long hash = hash(stringForHash +"_" + String.valueOf(j) );
-//
-//
-//                buckets.put(hash, hostPortAddress);
-//                LOG.debug("added  {}  to server bucket ", hostPortAddress);
-//            }
-//        }
-//    }
-
 
     HostPortAddress getServer(String key) {
         synchronized (lock) {
