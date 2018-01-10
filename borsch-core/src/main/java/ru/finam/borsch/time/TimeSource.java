@@ -8,10 +8,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -26,22 +23,34 @@ import java.util.function.Consumer;
 public class TimeSource {
 
     private final static Logger LOG = LoggerFactory.getLogger(TimeSource.class);
-    private final static long PERIOD = 100L;
-    private FluxSink<Long> timeFluxSink;
-    private final Consumer<FluxSink<Long>> timeConsumer = timeFluxSink -> {
-        this.timeFluxSink = timeFluxSink;
-    };
-    private final Flux<Long> fluxTime = Flux.create(timeConsumer).share();
-    private final Scheduler scheduler;
 
+    private static final long PERIOD = 100L;
+
+    private final Object sinkLock = new Object();
+    private final List<FluxSink<Long>> sinkList = new ArrayList<>();
+
+    private final Consumer<FluxSink<Long>> timeConsumer = timeFluxSink -> {
+        synchronized (sinkLock) {
+            sinkList.add(timeFluxSink);
+        }
+        timeFluxSink.onDispose(() -> {
+            synchronized (sinkLock) {
+                sinkList.remove(timeFluxSink);
+            }
+        });
+    };
+
+    private final Flux<Long> fluxTime = Flux.create(timeConsumer);
+    private final Scheduler scheduler;
 
     public TimeSource(ExecutorService executorService) {
         scheduler = Schedulers.fromExecutorService(executorService);
         scheduler.schedulePeriodically(() -> {
             long currentTime = System.currentTimeMillis();
-            timeFluxSink.next(currentTime);
+            synchronized (sinkLock) {
+                sinkList.forEach(sink -> sink.next(currentTime));
+            }
         }, 0, PERIOD, TimeUnit.MILLISECONDS);
-        fluxTime.subscribe();
         scheduler.start();
     }
 
