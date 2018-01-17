@@ -29,12 +29,12 @@ public class TimeSource {
     private final Consumer<FluxSink<Long>> timeConsumer = timeFluxSink -> {
         synchronized (sinkLock) {
             sinkList.add(timeFluxSink);
+            timeFluxSink.onDispose(() -> {
+                synchronized (sinkLock) {
+                    sinkList.remove(timeFluxSink);
+                }
+            });
         }
-        timeFluxSink.onDispose(() -> {
-            synchronized (sinkLock) {
-                sinkList.remove(timeFluxSink);
-            }
-        });
     };
 
     private final Flux<Long> fluxTime = Flux.create(timeConsumer);
