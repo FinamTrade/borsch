@@ -25,6 +25,7 @@ public class HungryBorschEater extends AbstractBorschEater {
                 new HungryBorschEater(grpcAddress, 3);
         hungryBorschEater.registerService();
         hungryBorschEater.launchBorsch();
+
         while (true) {
 
         }

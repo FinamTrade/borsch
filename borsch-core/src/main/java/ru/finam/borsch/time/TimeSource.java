@@ -7,6 +7,7 @@ import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -45,7 +46,9 @@ public class TimeSource {
         scheduler.schedulePeriodically(() -> {
             long currentTime = System.currentTimeMillis();
             synchronized (sinkLock) {
-                sinkList.forEach(sink -> sink.next(currentTime));
+                for (int i = 0; i < sinkList.size(); i++) {
+                    sinkList.get(i).next(currentTime);
+                }
             }
         }, 0, PERIOD, TimeUnit.MILLISECONDS);
         scheduler.start();

@@ -42,7 +42,7 @@ public abstract class AbstractBorschEater {
         this.borschSettings = new BorschSettings(consulHost,
                 consulPort, getServiceId(),
                 SERVICE_NAME,
-                "/home/akhaymovich/temp/txalerts/txalerts/db",
+                "/home/akhaymovich/temp/txalerts",
                 "/home/akhaymovich/temp/txalerts/"
         );
         this.grpcClient = new SimpleGrpcClient(grpcBorschAddress);
@@ -70,6 +70,7 @@ public abstract class AbstractBorschEater {
                 },
                 borschSettings);
         borschFactory.startBorsch();
+        borschFactory.isMyEntity("BUCHMCU25225");
         new BorschDataThread(grpcClient, shard, getServiceId());
     }
 
