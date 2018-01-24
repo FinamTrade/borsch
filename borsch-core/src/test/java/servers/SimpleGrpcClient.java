@@ -16,7 +16,7 @@ public class SimpleGrpcClient {
     private BorschServiceGrpc.BorschServiceStub serviceStub;
 
     public SimpleGrpcClient(HostPortAddress hostPortAddress) {
-        managedChannel = OkHttpChannelBuilder.forAddress(hostPortAddress.getHost(), hostPortAddress.getPort())
+        managedChannel = OkHttpChannelBuilder.forAddress(hostPortAddress.getHost(), hostPortAddress.getGrpcBorschPort())
                 .usePlaintext(true)
                 .idleTimeout(1, TimeUnit.MINUTES)
                 .build();

@@ -46,6 +46,7 @@ public class ConsulCluster extends Cluster {
     private final ServerDistributionHolder serverDistributionHolder;
 
     private final int grpcPort;
+    private final int ringPort;
     private final AtomicReference<BigInteger> index = new AtomicReference<>(BigInteger.ZERO);
 
     private volatile boolean firstCheck = true;
@@ -111,13 +112,14 @@ public class ConsulCluster extends Cluster {
         this.serviceHolderId = borschSettings.getServiceHolderId();
         this.borschIdCheck = "borsch_" + serviceHolderId;
         HostPortAddress ownAddress = discoverOwnAddress(consul);
-        this.grpcPort = ownAddress.getPort();
+        this.grpcPort = ownAddress.getGrpcBorschPort();
         this.serverDistributionHolder = new ServerDistributionHolder(ownAddress, new HashSet<>());
         this.memberListener = new MemberListenerImpl(
                 borschClientManager,
                 Arrays.asList(stopNotYourCalculation, () -> synchronizeData(), startYourCalculation),
                 serverDistributionHolder);
         this.startYourCalculation = startYourCalculation;
+        this.ringPort = borschSettings.getHashRingPort();
     }
 
     private void loadHealthyInstances(AtomicReference<BigInteger> index) {
@@ -135,7 +137,7 @@ public class ConsulCluster extends Cluster {
         ).findAny().get();
         int port = parseTag(holderService.getServiceTags());
         LOG.info("My own address is host {} port {}", holderService.getAddress(), port);
-        return new HostPortAddress(holderService.getAddress(), port);
+        return new HostPortAddress(holderService.getAddress(), port, ringPort);
     }
 
     private void registerCheck(String idCheck, String name, String notes, Optional<String> ttl) {
@@ -161,7 +163,7 @@ public class ConsulCluster extends Cluster {
                 long borschHealthCheck = serviceHealth.getChecks().stream().filter(check -> check.getCheckId().contains("borsch")).count();
                 if (borschHealthCheck != 0) {
                     int grpcPort = parseTag(serviceHealth.getService().getTags());
-                    HostPortAddress inetAddress = new HostPortAddress(host, grpcPort);
+                    HostPortAddress inetAddress = new HostPortAddress(host, grpcPort, ringPort);
                     if (!inetAddressMap.containsKey(inetAddress) &&
                             !serviceHealth.getService().getId().equals(serviceHolderId)) {
                         memberListener.onJoin(inetAddress);

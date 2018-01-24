@@ -23,7 +23,7 @@ public class HealthCheckClient {
     private final HealthGrpc.HealthBlockingStub healthStub;
 
     public HealthCheckClient(HostPortAddress hostPortAddress) {
-        ManagedChannel managedChannel = OkHttpChannelBuilder.forAddress(hostPortAddress.getHost(), hostPortAddress.getPort())
+        ManagedChannel managedChannel = OkHttpChannelBuilder.forAddress(hostPortAddress.getHost(), hostPortAddress.getGrpcBorschPort())
                 .usePlaintext(true)
                 .idleTimeout(1, TimeUnit.MINUTES)
                 .build();

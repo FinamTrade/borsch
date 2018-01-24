@@ -157,19 +157,22 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
                         int succeedResp) {
             this.succeedResp = succeedResp;
             this.responseObserver = responseObserver;
-            long currentTime = System.currentTimeMillis() + TIME_UNIT.toMillis(1000);
-            timeSource.when(currentTime).subscribe(time -> {
-                if (succeedResp >= success.get()) {
-                    return;
-                }
-                try {
-                    responseObserver.onNext(PutResponse.newBuilder().setResult(false).build());
-                } catch (Throwable e) {
-                    e.printStackTrace();
-                }
-                working = false;
-                LOG.info("Cancelled by timeout success operations {} target {} ", success, succeedResp);
-            });
+            if (succeedResp > 0) {
+                long currentTime = System.currentTimeMillis() + TIME_UNIT.toMillis(5);
+                timeSource.when(currentTime).subscribe(time -> {
+                    if (succeedResp >= success.get()) {
+                        return;
+                    }
+                    try {
+                        responseObserver.onNext(PutResponse.newBuilder().setResult(false).build());
+                        responseObserver.onCompleted();
+                    } catch (Throwable e) {
+                        e.printStackTrace();
+                    }
+                    working = false;
+                    LOG.info("Cancelled by timeout success operations {} target {} ", success, succeedResp);
+                });
+            }
         }
 
         @Override

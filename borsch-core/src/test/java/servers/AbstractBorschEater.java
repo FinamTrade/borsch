@@ -38,12 +38,12 @@ public abstract class AbstractBorschEater {
         this.agentClient = consul.agentClient();
         this.borschTags = ImmutableList.of(
                 "borschHost=" + grpcBorschAddress.getHost(),
-                "borschPort=" + grpcBorschAddress.getPort());
+                "borschPort=" + grpcBorschAddress.getGrpcBorschPort());
         this.borschSettings = new BorschSettings(consulHost,
                 consulPort, getServiceId(),
                 SERVICE_NAME,
-                "/home/akhaymovich/temp/txalerts",
-                "/home/akhaymovich/temp/txalerts/"
+                "/home/akhaymovich/temp/txalerts/12",
+                "/home/akhaymovich/temp/txalerts/12", 12
         );
         this.grpcClient = new SimpleGrpcClient(grpcBorschAddress);
         this.shard = shard;

@@ -26,7 +26,7 @@ public class BorschServiceClient {
     private final Store store;
 
     BorschServiceClient(HostPortAddress hostPortAddress, Store store) {
-        ManagedChannel managedChannel = NettyChannelBuilder.forAddress(hostPortAddress.getHost(), hostPortAddress.getPort())
+        ManagedChannel managedChannel = NettyChannelBuilder.forAddress(hostPortAddress.getHost(), hostPortAddress.getGrpcBorschPort())
                 .usePlaintext(true)
                 .idleTimeout(1, TimeUnit.MINUTES)
                 .build();

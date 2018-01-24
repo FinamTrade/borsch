@@ -20,7 +20,7 @@ public class HungryBorschEater extends AbstractBorschEater {
 
 
     public static void main(String[] args) {
-        HostPortAddress grpcAddress = new HostPortAddress("localhost", 50103);
+        HostPortAddress grpcAddress = new HostPortAddress("localhost", 50103, 50103 );
         HungryBorschEater hungryBorschEater =
                 new HungryBorschEater(grpcAddress, 3);
         hungryBorschEater.registerService();

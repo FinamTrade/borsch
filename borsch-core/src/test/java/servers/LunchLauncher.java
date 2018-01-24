@@ -8,8 +8,8 @@ import ru.finam.borsch.HostPortAddress;
 public class LunchLauncher {
 
     public static void main(String[] args) {
-        HostPortAddress grpcAddress1 = new HostPortAddress("localhost", 50101);
-        HostPortAddress grpcAddress2 = new HostPortAddress("localhost", 50102);
+        HostPortAddress grpcAddress1 = new HostPortAddress("localhost", 50101, 50101);
+        HostPortAddress grpcAddress2 = new HostPortAddress("localhost", 50102, 50102);
 
         FatBorschEater fatBorschEater =
                 new FatBorschEater(grpcAddress1, 2);
