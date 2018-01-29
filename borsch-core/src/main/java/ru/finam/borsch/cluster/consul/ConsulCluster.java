@@ -44,9 +44,10 @@ public class ConsulCluster extends Cluster {
     private final String borschIdCheck;
     private final MemberListener memberListener;
     private final ServerDistributionHolder serverDistributionHolder;
+    private final HostPortAddress ownAddress;
 
     private final int grpcPort;
-    private final int ringPort;
+
     private final AtomicReference<BigInteger> index = new AtomicReference<>(BigInteger.ZERO);
 
     private volatile boolean firstCheck = true;
@@ -60,9 +61,9 @@ public class ConsulCluster extends Cluster {
                 public void onComplete(ConsulResponse<List<ServiceHealth>> consulResponse) {
                     healthNotifier(consulResponse.getResponse());
                     index.set(consulResponse.getIndex());
-                    if (firstCheck){
+                    if (firstCheck) {
                         firstCheck = false;
-                        if (numOfMembers() == 1){
+                        if (numOfMembers() == 1) {
                             startYourCalculation.run();
                         }
                     }
@@ -119,7 +120,7 @@ public class ConsulCluster extends Cluster {
                 Arrays.asList(stopNotYourCalculation, () -> synchronizeData(), startYourCalculation),
                 serverDistributionHolder);
         this.startYourCalculation = startYourCalculation;
-        this.ringPort = borschSettings.getHashRingPort();
+        this.ownAddress = ownAddress;
     }
 
     private void loadHealthyInstances(AtomicReference<BigInteger> index) {
@@ -135,9 +136,10 @@ public class ConsulCluster extends Cluster {
         CatalogService holderService = serviceList.stream().filter(catalogService ->
                 catalogService.getServiceId().equals(serviceHolderId)
         ).findAny().get();
-        int port = parseTag(holderService.getServiceTags());
-        LOG.info("My own address is host {} port {}", holderService.getAddress(), port);
-        return new HostPortAddress(holderService.getAddress(), port, ringPort);
+        int port = parseBorschPortTag(holderService.getServiceTags());
+        int servicePort = parseServicePortTag(holderService.getServiceTags());
+        LOG.info("My own address is host {} port {}", holderService.getAddress(), servicePort);
+        return new HostPortAddress(holderService.getAddress(), port, servicePort);
     }
 
     private void registerCheck(String idCheck, String name, String notes, Optional<String> ttl) {
@@ -162,19 +164,21 @@ public class ConsulCluster extends Cluster {
             if (!serviceHealth.getService().getId().equals(serviceHolderId)) {
                 long borschHealthCheck = serviceHealth.getChecks().stream().filter(check -> check.getCheckId().contains("borsch")).count();
                 if (borschHealthCheck != 0) {
-                    int grpcPort = parseTag(serviceHealth.getService().getTags());
-                    HostPortAddress inetAddress = new HostPortAddress(host, grpcPort, ringPort);
+                    int grpcPort = parseBorschPortTag(serviceHealth.getService().getTags());
+                    int servicePort = parseServicePortTag(serviceHealth.getService().getTags());
+                    HostPortAddress inetAddress = new HostPortAddress(host, grpcPort, servicePort);
                     if (!inetAddressMap.containsKey(inetAddress) &&
                             !serviceHealth.getService().getId().equals(serviceHolderId)) {
                         memberListener.onJoin(inetAddress);
                     }
+                    inetAddressMap.remove(inetAddress);
                     inetAddressMap.put(inetAddress, time);
                 }
             }
         });
         Set<HostPortAddress> diedServers = new HashSet<>();
         inetAddressMap.entrySet().stream()
-                .filter(healthEntry -> healthEntry.getValue() < time)
+                .filter(healthEntry -> healthEntry.getValue() < time - TimeUnit.SECONDS.toMillis(5))
                 .forEach(entry -> {
                     HostPortAddress diedServer = entry.getKey();
                     memberListener.onLeave(diedServer);
@@ -186,9 +190,18 @@ public class ConsulCluster extends Cluster {
     }
 
 
-    private static int parseTag(List<String> tags) {
+    private static int parseBorschPortTag(List<String> tags) {
         Optional<String> borschTag =
                 tags.stream().filter(tag -> tag.contains("borschPort")).findAny();
+        if (!borschTag.isPresent()) {
+            return -1;
+        }
+        return Integer.parseInt(borschTag.get().split("=")[1]);
+    }
+
+    private static int parseServicePortTag(List<String> tags) {
+        Optional<String> borschTag =
+                tags.stream().filter(tag -> tag.contains("servicePort")).findAny();
         if (!borschTag.isPresent()) {
             return -1;
         }

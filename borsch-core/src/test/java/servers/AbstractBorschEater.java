@@ -38,13 +38,13 @@ public abstract class AbstractBorschEater {
         this.agentClient = consul.agentClient();
         this.borschTags = ImmutableList.of(
                 "borschHost=" + grpcBorschAddress.getHost(),
-                "borschPort=" + grpcBorschAddress.getGrpcBorschPort());
+                "borschPort=" + grpcBorschAddress.getGrpcBorschPort(),
+                "servicePort=" + grpcBorschAddress.getGrpcBorschPort());
         this.borschSettings = new BorschSettings(consulHost,
                 consulPort, getServiceId(),
                 SERVICE_NAME,
-                "/home/akhaymovich/temp/txalerts/12",
-                "/home/akhaymovich/temp/txalerts/12", 12
-        );
+                "/home/akhaymovich/temp/txalerts/"+ grpcBorschAddress.getGrpcBorschPort(),
+                "/home/akhaymovich/temp/txalerts/12");
         this.grpcClient = new SimpleGrpcClient(grpcBorschAddress);
         this.shard = shard;
     }
@@ -70,7 +70,7 @@ public abstract class AbstractBorschEater {
                 },
                 borschSettings);
         borschFactory.startBorsch();
-        borschFactory.isMyEntity("BUCHMCU25225");
+
         new BorschDataThread(grpcClient, shard, getServiceId());
     }
 

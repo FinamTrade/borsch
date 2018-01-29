@@ -15,7 +15,7 @@ public class HostPortAddress implements Comparable<HostPortAddress> {
     private static final Comparator<HostPortAddress> HOSTS_COMPARATOR =
             Comparator
                     .comparing(HostPortAddress::getHost)
-                    .thenComparing(HostPortAddress::getGrpcBorschPort);
+                    .thenComparing(HostPortAddress::getHashRingPort);
 
     private final String host;
     private final int grpcBorschPort;
@@ -34,12 +34,17 @@ public class HostPortAddress implements Comparable<HostPortAddress> {
         }
         HostPortAddress hostPortAddress = (HostPortAddress) object;
         return hostPortAddress.getHost().equals(host) &&
-                hostPortAddress.getGrpcBorschPort() == grpcBorschPort;
+                hostPortAddress.getGrpcBorschPort() == grpcBorschPort
+                && hostPortAddress.getHashRingPort() == hashRingPort;
     }
 
     @Override
     public int hashCode() {
-        return Hashing.murmur3_32().newHasher().putString(host, Charset.defaultCharset()).putInt(grpcBorschPort).hash().asInt();
+        return Hashing.murmur3_32().newHasher()
+                .putString(host, Charset.defaultCharset())
+                .putInt(grpcBorschPort)
+                .putInt(hashRingPort).hash()
+                .asInt();
     }
 
     public String getHost() {
@@ -52,7 +57,7 @@ public class HostPortAddress implements Comparable<HostPortAddress> {
 
     @Override
     public String toString() {
-        return host + ":" + grpcBorschPort;
+        return host + ":" + grpcBorschPort +  "---" + hashRingPort;
     }
 
     public int getHashRingPort() {

@@ -44,15 +44,15 @@ class HashingRing {
                     String addressStr = hostPortAddress.getHost() + ":" + hostPortAddress.getHashRingPort() + "_" + String.valueOf(j);
                     BigInteger serverPartId = hash(addressStr);
                     buckets.put(serverPartId, hostPortAddress);
-                    LOG.info("ring hash: hash_key={} hash={}", addressStr, serverPartId);
+//                    LOG.info("ring hash: hash_key={} hash={}  borsch port = {}", addressStr, serverPartId, hostPortAddress.getGrpcBorschPort());
                 }
             }
         }
         LOG.info("Num of buckets {}", buckets.size());
-        LOG.info("---------------ring-----------");
-        for (Map.Entry<BigInteger, HostPortAddress> hpAddress:  buckets.descendingMap().entrySet()){
-            LOG.info("ring hash: host={} hash={}", hpAddress.getValue().toString(),  hpAddress.getKey());
-        }
+//        LOG.info("---------------ring-----------");
+//        for (Map.Entry<BigInteger, HostPortAddress> hpAddress:  buckets.descendingMap().entrySet()){
+//            LOG.info("ring hash: host={} hash={}", hpAddress.getValue().toString(),  hpAddress.getKey());
+//        }
     }
 
     HostPortAddress getServer(String key) {
@@ -65,6 +65,7 @@ class HashingRing {
             }
             BigInteger hv = hash(key);
             Map.Entry<BigInteger, HostPortAddress> addressEntry = buckets.ceilingEntry(hv);
+
             if (addressEntry == null) {
                 addressEntry = buckets.firstEntry();
             }

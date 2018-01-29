@@ -21,14 +21,15 @@ public class BorschClientManager {
             = new ArrayList<>();   //все клиенты кроме своего
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final Store store;
-
+    private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
+    private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
 
     public BorschClientManager(Store store) {
         this.store = store;
     }
 
     public void onClusterStart(long sinceMillis) {
-        LOG.info("Acsking for updates since ", new Date(sinceMillis));
+        LOG.info("Asking for updates since ", new Date(sinceMillis));
         askForSnapshotFrom(0, sinceMillis);
     }
 
@@ -42,7 +43,6 @@ public class BorschClientManager {
 
 
     public void putToNeibours(PutRequest putRequest, Consumer<Boolean> resultListener) {
-        ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
         readLock.lock();
         try {
             activeClientList
@@ -53,12 +53,11 @@ public class BorschClientManager {
     }
 
     public void onAddingNewServer(HostPortAddress newServerAddress) {
-        BorschServiceClient newCient = new BorschServiceClient(newServerAddress, store);
-        ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
+        BorschServiceClient newClient = new BorschServiceClient(newServerAddress, store);
         writeLock.lock();
         try {
             if (!activeClientList.contains(newServerAddress)) {
-                activeClientList.add(newCient);
+                activeClientList.add(newClient);
             }
         } finally {
             writeLock.unlock();

@@ -19,22 +19,22 @@ public class MemberListenerImpl implements MemberListener {
 
     private final BorschClientManager borschClientManager;
     private final ServerDistributionHolder serverDistributionHolder;
-    private final List<Runnable> actionListOnChange;
+    private final List<Runnable> actionList;
 
 
     public MemberListenerImpl(BorschClientManager borschClientManager,
-                              List<Runnable> actionListOnChange,
+                              List<Runnable> actionList,
                               ServerDistributionHolder serverDistributionHolder) {
         this.borschClientManager = borschClientManager;
         this.serverDistributionHolder = serverDistributionHolder;
-        this.actionListOnChange = actionListOnChange;
+        this.actionList = actionList;
     }
 
     @Override
     public void onJoin(HostPortAddress grpcAddress) {
         serverDistributionHolder.onJoin(grpcAddress);
         borschClientManager.onAddingNewServer(grpcAddress);
-        createChangesChain();
+        createChangesWithSync();
         LOG.info("{}  joined cluster ", grpcAddress);
     }
 
@@ -42,13 +42,18 @@ public class MemberListenerImpl implements MemberListener {
     public void onLeave(HostPortAddress grpcAddress) {
         borschClientManager.onShutdownServer(grpcAddress);
         serverDistributionHolder.onLeave(grpcAddress);
-        createChangesChain();
+        createChangesWithoutSync();
         LOG.info("{} left cluster ", grpcAddress);
     }
 
-    private CompletableFuture<Void> createChangesChain() {
-        return CompletableFuture.runAsync(actionListOnChange.get(0))
-                .thenRun(actionListOnChange.get(1))
-                .thenRun(actionListOnChange.get(2));
+    private CompletableFuture<Void> createChangesWithSync() {
+        return CompletableFuture.runAsync(actionList.get(0))
+                .thenRun(actionList.get(1))
+                .thenRun(actionList.get(2));
+    }
+
+    private CompletableFuture<Void> createChangesWithoutSync() {
+        return CompletableFuture.runAsync(actionList.get(0))
+                .thenRun(actionList.get(2));
     }
 }
