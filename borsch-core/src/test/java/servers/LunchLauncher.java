@@ -12,10 +12,10 @@ public class LunchLauncher {
         HostPortAddress grpcAddress2 = new HostPortAddress("localhost", 50102, 50102);
 
         FatBorschEater fatBorschEater =
-                new FatBorschEater(grpcAddress1, 2);
+                new FatBorschEater(grpcAddress1, 1);
 
         SkinnyBorschEater skinnyBorschEater =
-                new SkinnyBorschEater(grpcAddress2,  1);
+                new SkinnyBorschEater(grpcAddress2,  2);
 
         skinnyBorschEater.registerService();
         fatBorschEater.registerService();

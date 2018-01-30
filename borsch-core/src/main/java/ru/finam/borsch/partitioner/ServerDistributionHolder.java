@@ -53,10 +53,10 @@ public class ServerDistributionHolder {
         }
     }
 
-    public boolean isMyData(String accountHash) {
+    public boolean isMyData(String shard) {
         HostPortAddress serverHolder;
         synchronized (hashingRing) {
-            serverHolder = hashingRing.getServer(accountHash);
+            serverHolder = hashingRing.getServer(shard);
         }
         return serverHolder.equals(ownAddress);
     }

@@ -45,11 +45,12 @@ public class BorschServiceClient {
             @Override
             public void onNext(PutResponse value) {
                 resultConsumer.accept(value.getResult());
+                LOG.info("Put successful");
             }
 
             @Override
             public void onError(Throwable t) {
-                LOG.debug(t.getMessage(), t);
+                LOG.error(t.getMessage(), t);
             }
 
 

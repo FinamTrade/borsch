@@ -39,7 +39,7 @@ public class BorschFactory {
         Store store = new RocksDbStore(borschSettings.getPathToDb());
         BorschClientManager borschClientManager = new BorschClientManager(store);
         cluster = new ConsulCluster(borschClientManager, borschSettings,
-                stopNotYoutCalculation, startYourCalculation, scheduledExecutor);
+                stopNotYoutCalculation, startYourCalculation, store, scheduledExecutor);
         BorschServiceApi borschServiceApi = new BorschServiceApi(scheduledExecutor, store,
                 cluster, borschClientManager);
         grpcServer = new BorschGrpcServer(scheduledExecutor, borschServiceApi, cluster.grpcPort(),

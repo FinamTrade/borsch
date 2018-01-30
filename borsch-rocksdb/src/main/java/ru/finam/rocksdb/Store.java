@@ -11,7 +11,7 @@ import java.util.Optional;
 /**
  * Created by akhaymovich on 05.09.17.
  */
-public interface Store {
+public interface Store extends UpdateTimeGetter{
 
 
     boolean put(KV kv);

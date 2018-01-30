@@ -10,10 +10,9 @@ import org.slf4j.*;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
-import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 
@@ -21,12 +20,14 @@ import java.util.stream.Collectors;
  * Implementation of Store
  * Created by akhaymovich on 01.09.17.
  */
-public class RocksDbStore implements Store {
+public class RocksDbStore implements Store, UpdateTimeGetter {
 
     private static final Logger LOG = LoggerFactory.getLogger(RocksDbStore.class);
 
     private final RocksDB db;
     private final Map<String, ColumnFamilyHandle> handles = new ConcurrentHashMap<>();
+    private final AtomicLong lastTime = new AtomicLong(0);
+
 
     static {
         RocksDB.loadLibrary();
@@ -89,6 +90,7 @@ public class RocksDbStore implements Store {
             db.put(columnFamilyHandle, new WriteOptions(),
                     kv.getKey().toByteArray(),
                     kvRecord.toByteArray());
+            lastTime.getAndSet(System.currentTimeMillis());
             return true;
         } catch (RocksDBException e) {
             LOG.error(e.getMessage(), e);
@@ -225,5 +227,10 @@ public class RocksDbStore implements Store {
         Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
                 .setNanos((int) ((millis % 1000) * 1000000)).build();
         return KVRecord.newBuilder().setKv(kv).setUpdateTime(timestamp).build();
+    }
+
+    @Override
+    public long getLastUpdateTime() {
+        return lastTime.get();
     }
 }

@@ -28,7 +28,7 @@ public class SimpleGrpcClient {
         serviceStub.put(putRequest, new StreamObserver<PutResponse>() {
             @Override
             public void onNext(PutResponse value) {
-                System.out.println(value);
+
             }
 
             @Override

@@ -18,6 +18,7 @@ import ru.finam.borsch.cluster.MemberListener;
 import ru.finam.borsch.partitioner.ServerDistributionHolder;
 import ru.finam.borsch.partitioner.MemberListenerImpl;
 import ru.finam.borsch.rpc.client.BorschClientManager;
+import ru.finam.rocksdb.UpdateTimeGetter;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -100,8 +101,9 @@ public class ConsulCluster extends Cluster {
                          BorschSettings borschSettings,
                          Runnable stopNotYourCalculation,
                          Runnable startYourCalculation,
+                         UpdateTimeGetter updateTimeGetter,
                          ScheduledThreadPoolExecutor scheduledExecutor) {
-        super(borschClientManager, scheduledExecutor, borschSettings);
+        super(borschClientManager, scheduledExecutor, updateTimeGetter, borschSettings);
         this.serviceHolderName = borschSettings.getServiceHolderName();
         Consul consul = Consul.builder()
                 .withHostAndPort(HostAndPort.fromParts(borschSettings.getConsulHost(),
@@ -209,8 +211,8 @@ public class ConsulCluster extends Cluster {
     }
 
     @Override
-    public boolean isMyData(String accountHash) {
-        return serverDistributionHolder.isMyData(accountHash);
+    public boolean isMyData(String shard) {
+        return serverDistributionHolder.isMyData(shard);
     }
 
     @Override

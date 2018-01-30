@@ -7,10 +7,14 @@ import org.slf4j.LoggerFactory;
 import ru.finam.borsch.BorschSettings;
 import ru.finam.borsch.HostPortAddress;
 import ru.finam.borsch.rpc.client.BorschClientManager;
+import ru.finam.rocksdb.UpdateTimeGetter;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -27,13 +31,16 @@ public abstract class Cluster implements ClusterInfo {
     protected final Map<HostPortAddress, Long> inetAddressMap = new HashMap<>();
     private final BorschClientManager borschClientManager;
     protected final ScheduledThreadPoolExecutor scheduledExecutor;
+    private final UpdateTimeGetter updateTimeGetter;
 
 
     public Cluster(BorschClientManager borschClientManager,
                    ScheduledThreadPoolExecutor scheduledExecutor,
+                   UpdateTimeGetter updateTimeGetter,
                    BorschSettings borschSettings) {
         this.borschClientManager = borschClientManager;
         this.scheduledExecutor = scheduledExecutor;
+        this.updateTimeGetter = updateTimeGetter;
         this.timeFileName = borschSettings.getPathToTimeFile() + "/"
                 + borschSettings.getServiceHolderId();
     }
@@ -42,7 +49,7 @@ public abstract class Cluster implements ClusterInfo {
         LOG.info("synchronizing with {} servers", inetAddressMap.size());
         borschClientManager.onClusterStart(getLastWorkTime());
         scheduledExecutor.scheduleWithFixedDelay(() -> writeWorkTimeToFile(),
-                1L, 1L, TimeUnit.MINUTES);
+                30L, 30L, TimeUnit.SECONDS);
     }
 
     public abstract Consumer<Boolean> getHealthListener();
@@ -52,7 +59,8 @@ public abstract class Cluster implements ClusterInfo {
         File f = new File(timeFileName);
         try {
             f.createNewFile();
-            byte[] newTimeBytes = String.valueOf(System.currentTimeMillis()).getBytes();
+            byte[] newTimeBytes = String.valueOf(updateTimeGetter.getLastUpdateTime()).getBytes();
+            LOG.info("Last update from {} " , new Date().toString());
             Files.write(newTimeBytes, f);
         } catch (IOException e) {
             LOG.error(e.getMessage(), e);
@@ -60,20 +68,19 @@ public abstract class Cluster implements ClusterInfo {
     }
 
     private long getLastWorkTime() {
-        return 0;
-//        File f = new File(timeFileName);
-//        if (!f.exists()) {
-//            return 0;
-//        }
-//        try {
-//            List<String> fileContent = Files.readLines(f, Charset.defaultCharset());
-//            if (fileContent.size() > 1) {
-//                throw new RuntimeException("Invalid save time");
-//            }
-//            return Long.parseLong(fileContent.get(0)) - TimeUnit.MINUTES.toMillis(1);
-//        } catch (Exception e) {
-//            LOG.error(e.getMessage(), e);
-//            return 0;
-//        }
+        File f = new File(timeFileName);
+        if (!f.exists()) {
+            return 0;
+        }
+        try {
+            List<String> fileContent = Files.readLines(f, Charset.defaultCharset());
+            if (fileContent.size() > 1) {
+                throw new RuntimeException("Invalid save time");
+            }
+            return Long.parseLong(fileContent.get(0)) - TimeUnit.MINUTES.toMillis(1);
+        } catch (Exception e) {
+            LOG.error(e.getMessage(), e);
+            return 0;
+        }
     }
 }
