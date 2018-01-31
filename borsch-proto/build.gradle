@@ -1,0 +1,64 @@
+version 'unspecified'
+
+apply plugin: 'java'
+apply plugin: 'com.google.protobuf'
+
+sourceCompatibility = 1.8
+
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            url 'http://msk-projects2:81/artifactory/repo'
+        }
+        dependencies {
+            classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.3'
+        }
+    }
+}
+
+ext.grpcArtifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+
+sourceSets {
+    main {
+        java{
+            srcDir 'src/generated/main/grpc'
+            srcDir 'src/generated/main/java'
+        }
+        proto {
+            srcDir 'src/main/protofiles'
+        }
+    }
+}
+
+clean {
+    delete "$projectDir/src/generated"
+}
+
+
+
+dependencies {
+    compile "io.grpc:grpc-all:${grpcVersion}"
+}
+
+
+protobuf {
+    generatedFilesBaseDir = "$projectDir/src/generated"
+
+    protoc {
+        artifact = "com.google.protobuf:protoc:${protobufVersion}"
+    }
+    plugins {
+        grpc {
+            artifact = "${grpcArtifact}"
+        }
+    }
+
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
+
+    generatedFilesBaseDir = "$projectDir/src/generated"
+}

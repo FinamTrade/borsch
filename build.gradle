@@ -16,7 +16,6 @@ subprojects {
 
     dependencies {
         compile "org.slf4j:slf4j-simple:${slf4j}"
-        compile "ru.finam.protobuf:grpc-borsch:1.1.198"
         testCompile "junit:junit:${junit}"
     }
 
@@ -29,21 +28,5 @@ subprojects {
             }
         }
     }
-
-//    task srcs(type: Jar, dependsOn: classes) {
-//        classifier = 'sources'
-//        from project.sourceSets.main.allSource
-//    }
-
-//    jar {
-//        manifest {
-//            attributes('Implementation-Title': "$name",
-//                    'Implementation-Version': version,
-//                    'Implementation-Vendor': "Investment holding \"FINAM\" CJSC",
-//                    'Build-Date': new java.text.SimpleDateFormat("HH:mm:ss yyyy/MM/dd").format(new Date()),
-//            )
-//        }
-//    }
-
 }
 

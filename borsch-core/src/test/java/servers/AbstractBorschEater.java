@@ -11,6 +11,7 @@ import ru.finam.borsch.BorschSettings;
 import ru.finam.borsch.HostPortAddress;
 import ru.finam.borsch.launch.BorschFactory;
 
+import java.io.File;
 import java.util.List;
 
 public abstract class AbstractBorschEater {
@@ -28,6 +29,13 @@ public abstract class AbstractBorschEater {
     private static final String consulHost = "localhost";
     private static final int consulPort = 8500;
 
+    private static final File file = new File("/temp/db/");
+
+    static {
+        boolean created = file.mkdir();
+        LOG.info("create dir for db:  {}", created);
+    }
+
 
     AbstractBorschEater(HostPortAddress grpcBorschAddress,
                         int shard) {
@@ -35,6 +43,7 @@ public abstract class AbstractBorschEater {
                 .withHostAndPort(HostAndPort.fromParts(consulHost,
                         consulPort))
                 .build();
+
         this.agentClient = consul.agentClient();
         this.borschTags = ImmutableList.of(
                 "borschHost=" + grpcBorschAddress.getHost(),
@@ -43,8 +52,8 @@ public abstract class AbstractBorschEater {
         this.borschSettings = new BorschSettings(consulHost,
                 consulPort, getServiceId(),
                 SERVICE_NAME,
-                "/home/akhaymovich/temp/txalerts/"+ grpcBorschAddress.getGrpcBorschPort(),
-                "/home/akhaymovich/temp/txalerts/12");
+                "/temp/db/",
+                "/temp/db/");
         this.grpcClient = new SimpleGrpcClient(grpcBorschAddress);
         this.shard = shard;
     }
@@ -62,15 +71,9 @@ public abstract class AbstractBorschEater {
     }
 
     void launchBorsch() {
-        BorschFactory borschFactory = new BorschFactory(() -> {
-            LOG.info("Stop data");
-        },
-                () -> {
-                    LOG.info("Start data");
-                },
-                borschSettings);
+        BorschFactory borschFactory = new BorschFactory(() ->
+                LOG.info("Stop data"), () -> LOG.info("Start data"), borschSettings);
         borschFactory.startBorsch();
-
         new BorschDataThread(grpcClient, shard, getServiceId());
     }
 

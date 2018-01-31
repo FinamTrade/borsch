@@ -45,7 +45,6 @@ public class BorschServiceClient {
             @Override
             public void onNext(PutResponse value) {
                 resultConsumer.accept(value.getResult());
-                LOG.info("Put successful");
             }
 
             @Override

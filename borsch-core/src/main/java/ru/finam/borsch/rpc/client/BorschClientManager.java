@@ -18,7 +18,7 @@ public class BorschClientManager {
     private static final Logger LOG = LoggerFactory.getLogger(BorschClientManager.class);
 
     private final List<BorschServiceClient> activeClientList
-            = new ArrayList<>();   //все клиенты кроме своего
+            = new ArrayList<>();   //all clients except me
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final Store store;
     private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
