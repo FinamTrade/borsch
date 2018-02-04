@@ -1,3 +1,0 @@
-dependencies {
-    compile "org.rocksdb:rocksdbjni:${rocksdb}"
-}

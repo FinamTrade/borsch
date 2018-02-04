@@ -1,0 +1,4 @@
+dependencies {
+    compile project(':borsch-proto')
+    compile "org.rocksdb:rocksdbjni:${rocksdb}"
+}

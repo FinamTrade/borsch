@@ -1,25 +1,32 @@
-group 'borsch'
-version '1.0-SNAPSHOT'
-
-
 subprojects {
+    group = projectGroup
+    version = projectVersion
+
     repositories {
         maven {
-            url 'https://artifact.finam.ru/artifactory/cb-maven-repo/'
-            mavenCentral()
+            url repositoryServer
         }
     }
 
-    apply plugin: 'java'
+    apply plugin: "java"
+    apply plugin: "maven"
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 
     dependencies {
         compile "org.slf4j:slf4j-simple:${slf4j}"
-        compile "ru.finam.protobuf:grpc-borsch:${borschVersion}"
         testCompile "junit:junit:${junit}"
     }
-}
 
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                repository(url: version.endsWith('-SNAPSHOT') ?
+                        deployer_url_snapshot :
+                        deployer_url_release)
+            }
+        }
+    }
+}
 
