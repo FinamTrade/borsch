@@ -8,12 +8,16 @@ import finam.protobuf.borsch.KVRecord;
 import org.rocksdb.*;
 import org.slf4j.*;
 import org.slf4j.Logger;
+import java.io.File;
 
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 
 /**
@@ -28,6 +32,10 @@ public class RocksDbStore implements Store, UpdateTimeGetter {
     private final Map<String, ColumnFamilyHandle> handles = new ConcurrentHashMap<>();
     private final AtomicLong lastTime = new AtomicLong(0);
 
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final String backupPath;
+    private final  BackupEngine backupEngine;
+
 
     static {
         RocksDB.loadLibrary();
@@ -35,6 +43,26 @@ public class RocksDbStore implements Store, UpdateTimeGetter {
 
 
     public RocksDbStore(String location) {
+
+        backupPath = location + "/backup";
+        File backup = new File(backupPath);
+        if (backup.exists()) {
+            backup.delete();
+        }
+        backup.mkdir();
+        try {
+            backupEngine = BackupEngine.open(Env.getDefault(), new
+                    BackupableDBOptions(backupPath)
+                    .setShareFilesWithChecksum(true)
+                    .setShareTableFiles(true)
+                    .setSync(false)
+                    .setBackupLogFiles(false)
+            );
+        } catch (RocksDBException e) {
+            LOG.error(e.getMessage(),e);
+            throw new RuntimeException(e);
+        }
+
         List<ColumnFamilyHandle> columns = new ArrayList<>();
         DBOptions dbOptions = createDbOptions();
         List<ColumnFamilyDescriptor> familyList;
@@ -75,6 +103,8 @@ public class RocksDbStore implements Store, UpdateTimeGetter {
             dbOptions.close();
             db.close();
         }));
+
+        scheduler.scheduleAtFixedRate(() -> backup(), 1, 1, TimeUnit.DAYS);
     }
 
 
@@ -232,5 +262,21 @@ public class RocksDbStore implements Store, UpdateTimeGetter {
     @Override
     public long getLastUpdateTime() {
         return lastTime.get();
+    }
+
+    private void backup() {
+
+        try {
+            backupEngine.createNewBackup(db);
+            LOG.info("create a backup at {}", new Date(System.currentTimeMillis()));
+        } catch (RocksDBException e) {
+            LOG.error(e.getMessage(), e);
+        }
+    }
+
+
+    public static void main(String[] args) {
+        RocksDbStore store = new RocksDbStore("/rocks");
+        store.put(KV.getDefaultInstance());
     }
 }
