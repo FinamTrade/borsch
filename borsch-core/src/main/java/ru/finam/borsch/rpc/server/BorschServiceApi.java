@@ -128,6 +128,9 @@ public class BorschServiceApi extends BorschServiceGrpc.BorschServiceImplBase {
             if (quorum != 0) {
                 Consumer<Boolean> collectConsumer = new CollectConsumer(timeSource, responseObserver, quorum);
                 borschClientManager.putToNeibours(request, collectConsumer);
+            } else {
+                responseObserver.onNext(PutResponse.newBuilder().setResult(true).build());
+                responseObserver.onCompleted();
             }
         } else {
             store.put(request.getKv());
